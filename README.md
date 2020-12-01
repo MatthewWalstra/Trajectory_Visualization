@@ -1,52 +1,24 @@
-Welcome to <%= projectName %> 👋
-<% if (isProjectOnNpm) { -%> [![Version](https://img.shields.io/npm/v/<%= projectName %>.svg)](https://www.npmjs.com/package/<%= projectName %>) <% } -%> <% if (projectVersion && !isProjectOnNpm) { -%> ![Version](https://img.shields.io/badge/version-<%= projectVersion %>-blue.svg?cacheSeconds=2592000) <% } -%> <% if (projectPrerequisites) { -%> <% projectPrerequisites.map(({ name, value }) => { -%> ![Prerequisite](https://img.shields.io/badge/<%= name %>-<%= encodeURIComponent(value) %>-blue.svg) <% }) -%> <% } -%> <% if (projectDocumentationUrl) { -%> Documentation <% } -%> <% if (isGithubRepos) { -%> [Maintenance](<%= repositoryUrl %>/graphs/commit-activity) <% } -%> <% if (licenseName) { -%> ![License: <%= licenseName %>](https://img.shields.io/<%= isGithubRepos ? github/license/${authorGithubUsername}/${projectName} : badge/License-${licenseName}-yellow.svg %>) <% } -%> <% if (authorTwitterUsername) { -%> [![Twitter: <%= authorTwitterUsername %>](https://img.shields.io/twitter/follow/<%= authorTwitterUsername %>.svg?style=social)](https://twitter.com/<%= authorTwitterUsername %>) <% } -%> <% if (projectDescription) { -%>
+<h1 align="center">Welcome to Trajectory Visualization</h1>
+<p align="center">
+  <img src="https://img.shields.io/npm/v/readme-md-generator.svg?orange=blue" />
+  <a href="https://www.npmjs.com/package/readme-md-generator">
+    <img alt="downloads" src="https://img.shields.io/npm/dm/readme-md-generator.svg?color=blue" target="_blank" />
+  </a>
+  <a href="https://github.com/frinyvonnick/gitmoji-changelog">
+    <img src="https://img.shields.io/badge/changelog-gitmoji-brightgreen.svg" alt="gitmoji-changelog">
+  </a>
+</p>
 
-<%= projectDescription %> <% } -%> <% if (projectHomepage) { -%>
+> Python application to visualize trajectory profiles on FRC fields.<br /> 
 
-🏠 Homepage
-<% } -%> <% if (projectDemoUrl) { -%>
+## Prerequisites
 
-✨ Demo
-<% } -%> <% if (projectPrerequisites && projectPrerequisites.length) { -%>
+Create a python virtualenv
+Install pint, kivy, and kivymd
 
-Prerequisites
-<% projectPrerequisites.map(({ name, value }) => { -%>
+## Author
 
-<%= name %> <%= value %> <% }) -%> <% } -%> <% if (installCommand) { -%>
-Install
-<%= installCommand %>
-<% } -%> <% if (usage) { -%>
+**Matthew Walstra**
 
-Usage
-<%= usage %>
-<% } -%> <% if (testCommand) { -%>
+- Github: [@MatthewWalstra](https://github.com/MatthewWalstra)
 
-Run tests
-<%= testCommand %>
-<% } -%> <% if (authorName || authorTwitterUsername || authorGithubUsername) { -%>
-
-Author
-<% if (authorName) { %> 👤 <%= authorName %> <% } %> <% if (authorWebsite) { -%>
-
-Website: <%= authorWebsite %> <% } -%> <% if (authorTwitterUsername) { -%>
-Twitter: [@<%= authorTwitterUsername %>](https://twitter.com/<%= authorTwitterUsername %>) <% } -%> <% if (authorGithubUsername) { -%>
-GitHub: [@<%= authorGithubUsername %>](https://github.com/<%= authorGithubUsername %>) <% } -%> <% if (authorLinkedInUsername) { -%>
-LinkedIn: [@<%= authorLinkedInUsername %>](https://linkedin.com/in/<%= authorLinkedInUsername %>) <% } -%> <% } -%> <% if (issuesUrl) { -%>
-🤝 Contributing
-Contributions, issues and feature requests are welcome!
-
-Feel free to check issues page. <%= contributingUrl ? You can also take a look at the [contributing guide](${contributingUrl}). : '' %> <% } -%>
-
-Show your support
-Give a ⭐️ if this project helped you! <% if (authorPatreonUsername) { -%>
-
-[![support us](https://img.shields.io/badge/become-a patreon%20us-orange.svg?cacheSeconds=2592000)](https://www.patreon.com/<%= authorPatreonUsername %>) <% } -%>
-
-<% if (licenseName && licenseUrl) { -%>
-
-📝 License
-<% if (authorName && authorGithubUsername) { -%> Copyright © <%= currentYear %> [<%= authorName %>](https://github.com/<%= authorGithubUsername %>).
-
-<% } -%> This project is <%= licenseName %> licensed. <% } -%>
-
-<%- include('footer.md'); -%>
