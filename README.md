@@ -1,29 +1,52 @@
-# Foobar
+Welcome to <%= projectName %> 👋
+<% if (isProjectOnNpm) { -%> [![Version](https://img.shields.io/npm/v/<%= projectName %>.svg)](https://www.npmjs.com/package/<%= projectName %>) <% } -%> <% if (projectVersion && !isProjectOnNpm) { -%> ![Version](https://img.shields.io/badge/version-<%= projectVersion %>-blue.svg?cacheSeconds=2592000) <% } -%> <% if (projectPrerequisites) { -%> <% projectPrerequisites.map(({ name, value }) => { -%> ![Prerequisite](https://img.shields.io/badge/<%= name %>-<%= encodeURIComponent(value) %>-blue.svg) <% }) -%> <% } -%> <% if (projectDocumentationUrl) { -%> Documentation <% } -%> <% if (isGithubRepos) { -%> [Maintenance](<%= repositoryUrl %>/graphs/commit-activity) <% } -%> <% if (licenseName) { -%> ![License: <%= licenseName %>](https://img.shields.io/<%= isGithubRepos ? github/license/${authorGithubUsername}/${projectName} : badge/License-${licenseName}-yellow.svg %>) <% } -%> <% if (authorTwitterUsername) { -%> [![Twitter: <%= authorTwitterUsername %>](https://img.shields.io/twitter/follow/<%= authorTwitterUsername %>.svg?style=social)](https://twitter.com/<%= authorTwitterUsername %>) <% } -%> <% if (projectDescription) { -%>
 
-Foobar is a Python library for dealing with word pluralization.
+<%= projectDescription %> <% } -%> <% if (projectHomepage) { -%>
 
-## Installation
+🏠 Homepage
+<% } -%> <% if (projectDemoUrl) { -%>
 
-Use the package manager [pip](https://pip.pypa.io/en/stable/) to install foobar.
+✨ Demo
+<% } -%> <% if (projectPrerequisites && projectPrerequisites.length) { -%>
 
-```bash
-pip install foobar
-```
+Prerequisites
+<% projectPrerequisites.map(({ name, value }) => { -%>
 
-## Usage
+<%= name %> <%= value %> <% }) -%> <% } -%> <% if (installCommand) { -%>
+Install
+<%= installCommand %>
+<% } -%> <% if (usage) { -%>
 
-```python
-import foobar
+Usage
+<%= usage %>
+<% } -%> <% if (testCommand) { -%>
 
-foobar.pluralize('word') # returns 'words'
-foobar.pluralize('goose') # returns 'geese'
-foobar.singularize('phenomena') # returns 'phenomenon'
-```
+Run tests
+<%= testCommand %>
+<% } -%> <% if (authorName || authorTwitterUsername || authorGithubUsername) { -%>
 
-## Contributing
-Pull requests are welcome. For major changes, please open an issue first to discuss what you would like to change.
+Author
+<% if (authorName) { %> 👤 <%= authorName %> <% } %> <% if (authorWebsite) { -%>
 
-Please make sure to update tests as appropriate.
+Website: <%= authorWebsite %> <% } -%> <% if (authorTwitterUsername) { -%>
+Twitter: [@<%= authorTwitterUsername %>](https://twitter.com/<%= authorTwitterUsername %>) <% } -%> <% if (authorGithubUsername) { -%>
+GitHub: [@<%= authorGithubUsername %>](https://github.com/<%= authorGithubUsername %>) <% } -%> <% if (authorLinkedInUsername) { -%>
+LinkedIn: [@<%= authorLinkedInUsername %>](https://linkedin.com/in/<%= authorLinkedInUsername %>) <% } -%> <% } -%> <% if (issuesUrl) { -%>
+🤝 Contributing
+Contributions, issues and feature requests are welcome!
 
-## License
-[MIT](https://choosealicense.com/licenses/mit/)
+Feel free to check issues page. <%= contributingUrl ? You can also take a look at the [contributing guide](${contributingUrl}). : '' %> <% } -%>
+
+Show your support
+Give a ⭐️ if this project helped you! <% if (authorPatreonUsername) { -%>
+
+[![support us](https://img.shields.io/badge/become-a patreon%20us-orange.svg?cacheSeconds=2592000)](https://www.patreon.com/<%= authorPatreonUsername %>) <% } -%>
+
+<% if (licenseName && licenseUrl) { -%>
+
+📝 License
+<% if (authorName && authorGithubUsername) { -%> Copyright © <%= currentYear %> [<%= authorName %>](https://github.com/<%= authorGithubUsername %>).
+
+<% } -%> This project is <%= licenseName %> licensed. <% } -%>
+
+<%- include('footer.md'); -%>
