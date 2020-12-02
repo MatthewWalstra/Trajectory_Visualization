@@ -10,3 +10,32 @@ https://github.com/SCsailors/2020RobotCode/blob/master/src/main/cpp/lib/Geometry
 @date: Fall, 2020
 """
 
+import math
+
+class Twist:
+    """Contains the delta between poses velocities or accelerations"""
+
+    def __init__(self, dx=0, dy=0, dtheta=0):
+        """Constructs a Twist object"""
+        self.dx = dx
+        self.dy = dy
+        self.dtheta = dtheta
+    
+    def scaled(self, scale):
+        """Returns a scaled Twist"""
+        return Twist(self.dx * scale, self.dy * scale, self.dtheta * scale)
+
+    def norm(self):
+        """Returns the magnitude of the Twist"""
+        if (self.dy == 0.0):
+            return abs(self.dx)
+        return math.hypot(self.dx, self.dy)
+
+    def derive(self, initial, dt):
+        """Returns the derivative between (self and initial) / dt"""
+        ddx = (self.dx - initial.dx) / dt
+        ddy = (self.dy - initial.dy) / dt
+        ddt = (self.dtheta - initial.dtheta) / dt
+        return Twist(ddx, ddy, ddt)
+
+    

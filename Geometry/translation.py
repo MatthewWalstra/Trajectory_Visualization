@@ -11,7 +11,7 @@ https://github.com/SCsailors/2020RobotCode/blob/master/src/main/cpp/lib/Geometry
 """
 
 import math
-import rotation
+#from Geometry.rotation import Rotation
 
 
 
@@ -45,7 +45,7 @@ class Translation:
 
     def extrapolate(self, other, x):
         """Returns a Translation extrapolated from self and other"""
-        return Translation(x * (other.x - self.x) + self.x, x * (other.x - self.y) + self.y)
+        return Translation(x * (other.x - self.x) + self.x, x * (other.y - self.y) + self.y)
 
     def interpolate(self, other, x):
         """Returns a Translation interpolated between self and other (x is from 0-1)"""
@@ -61,7 +61,7 @@ class Translation:
         return self.x * other.y - self.y * other.x
     
 if __name__ == "__main__":
-    print("Translation")
+    pass
     
 
     

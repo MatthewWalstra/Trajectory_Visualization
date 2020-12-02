@@ -15,6 +15,8 @@ EPSILON = 1E-12
 
 def limit2(v, min_v, max_v):
     "Returns limited value of v between min_v and max_v"
+    # TODO: ValueError if min_v > max_v
+    
     if v <= min_v:
         return min_v
     elif v >= max_v:
