@@ -104,3 +104,7 @@ class Pose:
         
         tmp = self.log(self.inverse().transform(other))
         return epsilon_equals(tmp.dy, 0.0) and epsilon_equals(tmp.dtheta, 0.0)
+
+    def __str__(self):
+        """Returns Pose as a string"""
+        return self.translation.__str__() + self.rotation.__str__() + "{:.6f}, {:.6f}, ".format(self.curvature, self.dCurvature)

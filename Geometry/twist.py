@@ -38,4 +38,8 @@ class Twist:
         ddt = (self.dtheta - initial.dtheta) / dt
         return Twist(ddx, ddy, ddt)
 
+    def __str__(self):
+        """Returns Twist as a string"""
+        return "{:.6f}, {:.6f}, {:.6f}, ".format(self.dx, self.dy, self.dtheta)
+
     

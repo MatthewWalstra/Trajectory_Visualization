@@ -59,6 +59,10 @@ class Translation:
     def cross(self, other):
         """Returns the cross product of Translation self and other"""
         return self.x * other.y - self.y * other.x
+
+    def __str__(self):
+        """Returns Translation as a string"""
+        return "{:.6f}, {:.6f}, ".format(self.x, self.y)
     
 if __name__ == "__main__":
     pass

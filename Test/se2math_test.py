@@ -17,7 +17,8 @@ import os, sys
 sys.path.append(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
 #https://chrisyeh96.github.io/2017/08/08/definitive-guide-python-imports.html
 # Number of os.path.dirname dependent on number of subfolders: goes up 1 directory each time
-# Uncomment top line if you want to use the run button in the top right, F5 works regardless
+# Uncomment top line if you want to use the run button in the top right
+# F5 works because of adding Trajectory_Visualization directory to PYTHONPATH in .env file
 
 from Geometry.pose import Pose, to_pose
 from Geometry.rotation import Rotation, from_degrees, from_radians
