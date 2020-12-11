@@ -22,6 +22,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
 
 from Geometry.trajectory_point import TrajectoryPoint
 from Geometry.pose import Pose
+from Geometry.rotation import from_degrees
 
 from Spline.quintic_hermite_spline import QuinticHermiteSpline, optimize_spline, create_quintic_splines
 
@@ -122,9 +123,14 @@ class Trajectory:
         self.update_splines = True
         self.reparameterize_splines()
     
-    def update_pose(self, pose, index):
-        """Mutator to update a single pose at index"""
-        self.poses[index] = pose
+    def update_pose(self, index, value, key):
+        """Mutator to update a single value at index"""
+        if key == "x":
+            self.poses[index].translation.x = value
+        elif key == "y":
+            self.poses[index].translation.y = value
+        if key == "theta":
+            self.poses[index].rotation = from_degrees(value)
 
         # Reset generation time and reparameterize splines
         self.generation_time = 0.0

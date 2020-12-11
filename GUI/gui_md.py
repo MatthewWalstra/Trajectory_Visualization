@@ -454,13 +454,10 @@ class VerticalContainer(ILeftBody, MDGridLayout):
     def update_x(self):
         """Updates x"""
         try:
-            # TODO: Update actual Trajectory List
             value = float(self.children[2].text)
             # https://stackoverflow.com/questions/32162180/how-can-i-refer-to-kivys-root-widget-from-python
 
-            print("{}, {:.2f}".format(self.get_index(), value))
-
-            MDApp.get_running_app().current_trajectory.poses[self.get_index()].translation.x = value 
+            MDApp.get_running_app().current_trajectory.update_pose(self.get_index(), value, "x") 
             
             
             
@@ -473,10 +470,8 @@ class VerticalContainer(ILeftBody, MDGridLayout):
     def update_y(self):
         """Updates y"""
         try:
-            # TODO: Update actual Trajectory List
             value = float(self.children[1].text)
-            MDApp.get_running_app().current_trajectory.poses[self.get_index()].translation.y = value 
-            print("{}, {:.2f}".format(self.get_index(), value))
+            MDApp.get_running_app().current_trajectory.update_pose(self.get_index(), value, "y") 
         except ValueError:
             self.children[1].text = self.prev_y
             pass
@@ -485,10 +480,8 @@ class VerticalContainer(ILeftBody, MDGridLayout):
     def update_theta(self):
         """Updates theta"""
         try:
-            # TODO: Update actual Trajectory List
             value = float(self.children[0].text)
-            MDApp.get_running_app().current_trajectory.poses[self.get_index()].rotation = from_degrees(value) 
-            print("{}, {:.2f}".format(self.get_index(), value))
+            MDApp.get_running_app().current_trajectory.update_pose(self.get_index(), value, "theta")
             
         except ValueError:
             self.children[0].text = self.prev_theta
