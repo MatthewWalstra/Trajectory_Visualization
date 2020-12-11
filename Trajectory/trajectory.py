@@ -35,7 +35,7 @@ def mirror_trajectory(trajectory):
     for p in trajectory.poses:
         poses.append(p.mirror())
 
-    return Trajectory(poses, reverse = trajectory.reverse, start_velocity=trajectory.start_velocity, end_velocity=trajectory.end_velocity, max_velocity=trajectory.max_velocity, max_abs_acceleration=trajectory.max_abs_acceleration)
+    return Trajectory(name=trajectory.name, poses=poses, current=trajectory.current, reverse = trajectory.reverse, start_velocity=trajectory.start_velocity, end_velocity=trajectory.end_velocity, max_velocity=trajectory.max_velocity, max_abs_acceleration=trajectory.max_abs_acceleration)
 
 class Trajectory:
     """Trajectory container class"""
@@ -45,22 +45,22 @@ class Trajectory:
     length = 0
     
     update_splines = True
-    parameterizeable = False
 
-    def __init__(self, poses=[], points=[], reverse=False, start_velocity=0, end_velocity=0, max_velocity=120, max_abs_acceleration=180):
+    def __init__(self, name="", poses=[], current=False, reverse=False, start_velocity=0, end_velocity=0, max_velocity=120, max_abs_acceleration=180, max_centr_acceleration=120):
         """Constructs a Trajectory object"""
 
+        self.current = current
+        self.name = name
         self.poses = poses
         self.splines = []
-        self.points = points
         self.reverse = reverse
         self.start_velocity = start_velocity
         self.end_velocity = end_velocity
         self.max_velocity = max_velocity
         self.max_abs_acceleration = max_abs_acceleration
+        self.max_centr_acceleration = max_centr_acceleration
 
         if len(self.poses) != 0:
-            self.parameterizeable = True
             self.update_splines = True
             self.reparameterize_splines()
 
@@ -71,10 +71,10 @@ class Trajectory:
         spline_length_invalid = len(self.splines) == 0
 
         # TODO: add better error handling
-        if (pose_length_invalid and spline_length_invalid) or (not self.parameterizeable):
+        if (pose_length_invalid and spline_length_invalid):
             raise ValueError("Can't reparameterize splines if len of poses and splines equals 0.")
 
-        # If valid start timer and reparameterize splines
+        # If valid, start timer and reparameterize splines
         start_time = time.perf_counter()
         if self.update_splines:
             self.splines = create_quintic_splines(self.poses)
@@ -92,7 +92,7 @@ class Trajectory:
         spline_length_invalid = len(self.splines) == 0
 
         # TODO: add better error handling
-        if (pose_length_invalid and spline_length_invalid) or (not self.parameterizeable):
+        if (pose_length_invalid and spline_length_invalid):
             raise ValueError("Can't optimize splines if len of poses and splines equals 0.")
 
         # Update generation time and optimize splines
@@ -110,7 +110,7 @@ class Trajectory:
         
         # Time parameterize and add time to generation time
         start_time = time.perf_counter()
-        time_parameterize_trajectory(self.reverse, self.points, self.start_velocity, self.end_velocity, self.max_velocity, self.max_abs_acceleration)
+        time_parameterize_trajectory(self.reverse, self.points, self.start_velocity, self.end_velocity, self.max_velocity, self.max_abs_acceleration, self.max_centr_acceleration)
         self.generation_time += time.perf_counter() - start_time
 
     def update_poses(self, poses):

@@ -34,7 +34,7 @@ class TractoryTest(unittest.TestCase):
         poses.append(to_pose(50, 100, 90))
         poses.append(to_pose(100, 150, 0))
 
-        traj = Trajectory(poses, reverse = False)
+        traj = Trajectory(poses=poses, reverse = False)
 
         self.assertAlmostEqual(3, len(traj.poses))
         self.assertAlmostEqual(2, len(traj.splines))
@@ -62,7 +62,7 @@ class TractoryTest(unittest.TestCase):
         poses.append(to_pose(160.0, 100.0, 0.0))
         poses.append(to_pose(200.0, 70.0, 45.0))
 
-        traj = Trajectory(poses)
+        traj = Trajectory(poses=poses)
         traj.time_parameterize_splines()
         iterator = TrajectoryIterator(traj)
         print(iterator.end_t)  

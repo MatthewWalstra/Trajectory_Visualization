@@ -71,7 +71,7 @@ def get_segment_arc(spline, points, t0, t1, max_dx, max_dy, max_dtheta):
     else:
         points.append(TrajectoryPoint(spline.get_pose(t1)))
 
-def time_parameterize_trajectory(reverse, trajectory_points, start_velocity, end_velocity, max_velocity, max_abs_acceleration):
+def time_parameterize_trajectory(reverse, trajectory_points, start_velocity, end_velocity, max_velocity, max_abs_acceleration, max_centr_acceleration):
     """Time parameterizes given TrajectoryPoints"""
     
     # Forward pass
@@ -94,7 +94,7 @@ def time_parameterize_trajectory(reverse, trajectory_points, start_velocity, end
         state.velocity = min(max_velocity, math.sqrt(predecessor.velocity * predecessor.velocity + 2.0 * predecessor.max_acceleration * ds))
 
         # Enforce velocity constraints
-        state.velocity = min(get_max_velocity(state, max_velocity), state.velocity)
+        state.velocity = min(get_max_velocity(state, max_velocity, max_centr_acceleration), state.velocity)
 
         state.max_acceleration = max_abs_acceleration
         state.min_acceleration = -max_abs_acceleration
@@ -149,9 +149,9 @@ def time_parameterize_trajectory(reverse, trajectory_points, start_velocity, end
         state.index_floor = i
         state.index_ceil = i
 
-def get_max_velocity(trajectory_point, max_velocity):
+def get_max_velocity(trajectory_point, max_velocity, max_centr_accel):
     """Returns the max velocity for a given trajectory state"""
-    return min(get_max_drivetrain_velocity(trajectory_point, max_velocity), get_max_centripetal_velocity(trajectory_point))
+    return min(get_max_drivetrain_velocity(trajectory_point, max_velocity), get_max_centripetal_velocity(trajectory_point, max_centr_accel))
 
 def get_max_drivetrain_velocity(trajectory_point, max_velocity):
     """Returns the max absolute velocity for a tank drive"""
@@ -174,8 +174,8 @@ def get_max_drivetrain_velocity(trajectory_point, max_velocity):
     return (max_velocity + left_right_max) / 2.0
         
 
-def get_max_centripetal_velocity(trajectory_point):
+def get_max_centripetal_velocity(trajectory_point, max_centr_accel):
     """Returns max centripetal velocity"""
     if epsilon_equals(trajectory_point.pose.curvature, 0.0):
         return 1e4
-    return math.sqrt(abs(MAXCENTRIPETALACCELERATION / trajectory_point.pose.curvature))
+    return math.sqrt(abs(max_centr_accel / trajectory_point.pose.curvature))
