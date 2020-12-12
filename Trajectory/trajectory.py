@@ -36,7 +36,7 @@ def mirror_trajectory(trajectory):
     for p in trajectory.poses:
         poses.append(p.mirror())
 
-    return Trajectory(name=trajectory.name, poses=poses, current=trajectory.current, reverse = trajectory.reverse, start_velocity=trajectory.start_velocity, end_velocity=trajectory.end_velocity, max_velocity=trajectory.max_velocity, max_abs_acceleration=trajectory.max_abs_acceleration)
+    return Trajectory(name=trajectory.name + "-Mirrored", poses=poses, current=False, reverse = trajectory.reverse, start_velocity=trajectory.start_velocity, end_velocity=trajectory.end_velocity, max_velocity=trajectory.max_velocity, max_abs_acceleration=trajectory.max_abs_acceleration)
 
 class Trajectory:
     """Trajectory container class"""
@@ -46,6 +46,7 @@ class Trajectory:
     length = 0
     
     update_splines = True
+    optimized = False
 
     def __init__(self, name="", poses=[], current=False, reverse=False, start_velocity=0, end_velocity=0, max_velocity=120, max_abs_acceleration=180, max_centr_acceleration=120):
         """Constructs a Trajectory object"""
@@ -77,7 +78,7 @@ class Trajectory:
 
         # If valid, start timer and reparameterize splines
         start_time = time.perf_counter()
-        if self.update_splines:
+        if self.update_splines or not self.optimized:
             self.splines = create_quintic_splines(self.poses)
             self.update_splines = False
 
@@ -85,9 +86,13 @@ class Trajectory:
 
         # Add timer to generation time
         self.generation_time += time.perf_counter() - start_time
+        self.time_parameterize_splines()
 
     def optimize_splines(self):
         """Optimizes splines"""
+
+        if self.optimized:
+            return
 
         pose_length_invalid = len(self.poses) == 0
         spline_length_invalid = len(self.splines) == 0
@@ -99,10 +104,11 @@ class Trajectory:
         # Update generation time and optimize splines
         start_time = time.perf_counter()
         optimize_spline(self.splines)
+    
         self.generation_time += time.perf_counter() - start_time
         
         # Don't reset splines to default
-        self.update_splines = False
+        self.optimized = True
         self.reparameterize_splines()
         
 
@@ -114,14 +120,28 @@ class Trajectory:
         time_parameterize_trajectory(self.reverse, self.points, self.start_velocity, self.end_velocity, self.max_velocity, self.max_abs_acceleration, self.max_centr_acceleration)
         self.generation_time += time.perf_counter() - start_time
 
-    def update_poses(self, poses):
-        """Mutator to update list of poses"""
-        self.poses = poses
+        self.drive_time = self.points[len(self.points) - 1].t
+        self.length = self.points[len(self.points) - 1].distance
 
-        # Reset generation time and reparameterize splines
-        self.generation_time = 0.0
-        self.update_splines = True
-        self.reparameterize_splines()
+    def add_pose(self, pose):
+        """Mutator to add pose to end"""
+        self.poses.append(pose)
+
+        self.reset()
+
+    def move_pose(self, index, delta):
+        """Mutator to move pose up or down"""
+        #https://www.geeksforgeeks.org/python-program-to-swap-two-elements-in-a-list/
+        self.poses[index],self.poses[index - delta] = self.poses[index - delta],self.poses[index]
+
+        self.reset()
+
+    def remove_pose(self, index):
+        """Mutator to add pose to end"""
+        self.poses.pop(index)
+
+        self.reset()
+
     
     def update_pose(self, index, value, key):
         """Mutator to update a single value at index"""
@@ -132,15 +152,21 @@ class Trajectory:
         if key == "theta":
             self.poses[index].rotation = from_degrees(value)
 
-        # Reset generation time and reparameterize splines
-        self.generation_time = 0.0
-        self.update_splines = True
-        self.reparameterize_splines()
+        self.reset()
+        
 
     def trajectory_length(self):
         """Returns the index length of the Trajectory"""
         return len(self.points)
 
+    def reset(self):
+        """Helper function that resets Trajectory generation"""
+
+        # Reset generation time and reparameterize splines
+        self.generation_time = 0.0
+        self.update_splines = True
+        self.optimized = False
+        self.reparameterize_splines()
 
 
     

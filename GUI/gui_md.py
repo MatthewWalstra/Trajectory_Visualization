@@ -16,6 +16,8 @@ https://www.reddit.com/r/kivy/comments/94wqzk/toolbar_stuck_at_bottom_of_screen/
 @date: Fall, 2020
 """
 
+from random import uniform, randint
+
 import os, sys
 sys.path.append(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
 #https://chrisyeh96.github.io/2017/08/08/definitive-guide-python-imports.html
@@ -27,7 +29,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
 from kivy.lang import Builder
 from kivy.uix.boxlayout import BoxLayout
 from kivy.properties import StringProperty, ListProperty, BooleanProperty, NumericProperty
-
+from kivy.clock import Clock
 
 from kivy.core.window import Window
 Window.size = (1920, 1080) # Adjust for your monitor resolution, esc to exit
@@ -45,10 +47,12 @@ from kivymd.uix.gridlayout import MDGridLayout
 
 from Geometry.pose import to_pose, Pose
 from Geometry.rotation import from_degrees
-from Trajectory.trajectory import Trajectory
+from Trajectory.trajectory import Trajectory, mirror_trajectory
 
 from Util.util import limit2
 from Util.jsonIO import JsonIO
+
+RADIUS = 15
 
 KV = '''
 # Menu item in the DrawerList list.
@@ -91,7 +95,7 @@ KV = '''
         TooltipMDIconButton:
             id: delte
             icon: "trash-can"
-            on_press: app.trash()
+            on_press: app.delete_point(self.parent)
             tooltip_text: "Delete"
 
     VerticalContainer:
@@ -101,17 +105,15 @@ KV = '''
             rows: 1
             cols: 2
 
-            TooltipMDIconButton:
+            MDIconButton:
                 id: up
                 icon: "arrow-up"
-                on_press: app.up()
-                tooltip_text: "Move Up"
+                on_press: app.up(self.parent.parent)
 
-            TooltipMDIconButton:
+            MDIconButton:
                 id: down
                 icon: "arrow-down"
-                on_press: app.down()
-                tooltip_text: "Move Down"
+                on_press: app.down(self.parent.parent)
             
         
         MDTextField:
@@ -291,6 +293,7 @@ Screen:
                                                     hint_text: "Trajectory Title"
                                                     color_mode: "custom"
                                                     line_color_focus: 1,1,1,1
+                                                    on_text_validate: app.update_name(self)
 
                                                 TooltipMDIconButton:
                                                     icon: "sync"
@@ -354,22 +357,22 @@ Screen:
 
                                 StatLabel:
                                     id: generation
-                                    text: "Generation Time"
+                                    text: "Generation Time (s)"
                                     value: "0"
                                     
                                 StatLabel:
                                     id: drive
-                                    text: "Drive Time"
+                                    text: "Drive Time (s)"
                                     value: "0"
 
                                 StatLabel:
                                     id: length
-                                    text: "Trajectory Length"
+                                    text: "Trajectory Length (in)"
                                     value: "0"
                                     
                                 StatLabel:
                                     id: current_vel
-                                    text: "Current Velocity"
+                                    text: "Current Velocity (in/s)"
                                     value: "0"
                                     
                             MDBoxLayout:
@@ -447,19 +450,19 @@ class VerticalContainer(ILeftBody, MDGridLayout):
     def initial_update(self, x, y, theta):
         """initial update to PointDrawer"""
 
-        self.prev_x = x
-        self.prev_y = y
-        self.prev_theta = theta
+        self.prev_x = "{:.3f}".format(x)
+        self.prev_y = "{:.3f}".format(y)
+        self.prev_theta = "{:.3f}".format(theta)
 
     def update_x(self):
         """Updates x"""
         try:
             value = float(self.children[2].text)
+            value = limit2(value, 0 + RADIUS, 629.25 - RADIUS)
+            self.children[2].text = "{:.3f}".format(value)
             # https://stackoverflow.com/questions/32162180/how-can-i-refer-to-kivys-root-widget-from-python
-
             MDApp.get_running_app().current_trajectory.update_pose(self.get_index(), value, "x") 
-            
-            
+            MDApp.get_running_app().update_points()
             
         except ValueError:
             self.children[2].text = self.prev_x
@@ -471,7 +474,10 @@ class VerticalContainer(ILeftBody, MDGridLayout):
         """Updates y"""
         try:
             value = float(self.children[1].text)
+            value = limit2(value, -161.625 + RADIUS, 161.625 - RADIUS)
+            self.children[1].text = "{:.3f}".format(value)
             MDApp.get_running_app().current_trajectory.update_pose(self.get_index(), value, "y") 
+            MDApp.get_running_app().update_points()
         except ValueError:
             self.children[1].text = self.prev_y
             pass
@@ -481,8 +487,9 @@ class VerticalContainer(ILeftBody, MDGridLayout):
         """Updates theta"""
         try:
             value = float(self.children[0].text)
+            self.children[0].text = "{:.3f}".format(value)
             MDApp.get_running_app().current_trajectory.update_pose(self.get_index(), value, "theta")
-            
+            MDApp.get_running_app().update_points()
         except ValueError:
             self.children[0].text = self.prev_theta
             pass
@@ -501,6 +508,15 @@ class VerticalContainer(ILeftBody, MDGridLayout):
 
 class RightContainer(IRightBodyTouch, MDBoxLayout):
     adaptive_width = True
+
+    def get_index(self):
+        """Returns the index of the point"""
+        c_list = MDApp.get_running_app().screen.ids.point_list.children 
+        i = len(c_list) - 1
+        for c in c_list:    
+            if c.ids.right_container == self:
+                return i
+            i -= 1
 
 class PointDrawer(OneLineAvatarIconListItem):
 
@@ -565,11 +581,17 @@ class DrawerList(ThemableBehavior, MDList):
     
     def remove_child(self, instance_item):
         """Removes Given Item from the list"""
-        if self.current_item == instance_item:
+        if len(self.children) == 1:
             return
+
+        index = instance_item.get_index()
+        MDApp.get_running_app().trajectories.pop(index)
+        
         self.remove_widget(instance_item)
 
-        # TODO: update, so delete current and moves previous to current 
+        if (not instance_item.text_color == self.theme_cls.text_color):
+            index = len(self.children) - (1 if index == 0 else index)
+            MDApp.get_running_app().set_active_trajectory(self.children[index])
 
 class MainApp(MDApp):
     """Main app class"""
@@ -582,6 +604,8 @@ class MainApp(MDApp):
 
     trajectories = []
     current_trajectory = Trajectory()
+
+    
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -606,6 +630,7 @@ class MainApp(MDApp):
         # Load Trajectories
         self.trajectories = self.jsonIO.load_trajectories()
         
+        # Set Current Trajectory
         update = True
         for t in self.trajectories:
             if t.current:
@@ -626,44 +651,158 @@ class MainApp(MDApp):
         item = self.screen.ids.content_drawer.ids.md_list.children[length - self.get_current_index()]
         self.screen.ids.content_drawer.ids.md_list.set_color_item(item)
         
-        # Match poses
+        # Sync GUI and Mathematical Poses
         self.update_poses()
+
+        # Schedule saving trajectories every 500 ms
+        Clock.schedule_interval(self.save_trajectories, .5)
+
+        # Draw points
+        self.update_points()
 
 
     def on_stop(self):
         """Save Settings before leaving"""
         self.jsonIO.save_trajectories(self.trajectories)
 
-    def trajectory_to_list(self, trajectory):
+    def save_trajectories(self, dt):
+        """Save Trajectories to JSON Periodically"""
+        self.jsonIO.save_trajectories(self.trajectories)
+
+    def update_points(self):
         point_list = []
-        for point in trajectory.points:
-            point_list.append(point.pose.translation.x)
-            point_list.append(point.pose.translation.y)
-        return point_list
+        for point in self.current_trajectory.points:
+            point_list.append(point.pose.translation.x * 1.5 + 174)
+            point_list.append(point.pose.translation.y * 1.5 + 689.5)
+        self.points = point_list
+
+    def update_name(self, instance):
+        """Updates name of current trajectory"""
+        # Update trajectory name
+        self.current_trajectory.name = instance.text
+
+        # Update GUI name
+        length = len(self.screen.ids.content_drawer.ids.md_list.children) - 1
+        self.screen.ids.content_drawer.ids.md_list.children[length - self.get_current_index()].text = instance.text
 
     def optimize_trajectory(self):
-        print("Optimize Trajectory")
+        """Callback for optimizing current trajectory"""
+        self.current_trajectory.optimize_splines()
+
+        self.update_stats()
+        # Update points to match optimization
+        self.update_points()
     
     def mirror_trajectory(self):
-        print("Mirror Trajectory")
+        """Mirrors current Trajectory and adds it as a new trajectory"""
+        self.add_trajectory(mirror_trajectory(self.current_trajectory))
 
     def animate_trajectory(self):
         print("Animate Trajectory")
 
     def add_point(self):
-        print("Add Point")
+        """Adds a point to current trajectory"""
+        dx = [50.0, 120.0]
+        dy = [-30.0, 30.0]
+        dt = [-20.0, 20.0]
+        # Generate semi - random point (Previous point + dx, dy, dt)
+        pose = self.current_trajectory.poses[len(self.current_trajectory.poses) - 1].transform(to_pose(uniform(dx[0], dx[1]), uniform(dy[0], dy[1]), uniform(dt[0], dt[1])))
+        pose.translation.x = limit2(pose.translation.x, 15, 614.25)
+        pose.translation.y = limit2(pose.translation.y, -146.625, 146.625)
 
-    def add_trajectory(self):
-        print("Add Trajectory")
+        # Add new point to trajectory
+        self.current_trajectory.add_pose(pose)
+
+        # Add new point to GUI
+        self.screen.ids.point_list.add_widget(PointDrawer())
+        self.screen.ids.point_list.children[0].ids.left_container.initial_update(pose.translation.x, pose.translation.y, pose.rotation.get_degrees())
+
+        
+        # Re-draw points to include new pose
+        self.update_points()
+
+    def add_trajectory(self, trajectory = None):
+        """Adds a trajectory to the trajectory list"""
+        
+        if trajectory == None:
+            # Find a valid trajectory name (Format: Trajectory1, Trajectory2, ... Trajectory100)
+            name = "Trajectory" + str(1)
+            valid = False
+            for i in range(100):
+                name = "Trajectory" + str(i + 1)
+                valid = False
+                for t in self.trajectories:
+                    if t.name == name:
+                        valid = False
+                        break
+                    valid = True
+                if valid:
+                    break
+            
+            trajectory = Trajectory(name=name, poses=self.random_points(), 
+                current=False, reverse=self.current_trajectory.reverse, start_velocity=self.current_trajectory.start_velocity, 
+                end_velocity=self.current_trajectory.end_velocity, max_velocity=self.current_trajectory.max_velocity, 
+                max_abs_acceleration=self.current_trajectory.max_abs_acceleration, 
+                max_centr_acceleration=self.current_trajectory.max_centr_acceleration)
+
+        # Add Trajectory to graphical list    
+        item = ItemDrawer(icon="chart-bell-curve-cumulative", text=trajectory.name)
+        self.screen.ids.content_drawer.ids.md_list.add_widget(
+                item
+            )
+
+        # Add Trajectory to mathematical list
+        self.trajectories.append(trajectory)
+
+        self.set_active_trajectory(item)
+
+    def random_points(self):
+        """Returns list if multiple of pseudo-random poses, else 1 pose"""
+        theta_range = [-20.0, 20.0]
+        x_range = [15.0, 120.0]
+        y_range = [-100.0, 100.0]
+        x_delta = [60.0, 100.0]
+        y_delta = [-30.0, 30.0]
+
+        theta1 = uniform(theta_range[0], theta_range[1])
+        theta2 = uniform(theta_range[0], theta_range[1])
+        x = uniform(x_range[0], x_range[1])
+        y = uniform(y_range[0], y_range[1])
     
-    def down(self):
-        print("down")
+        dx = uniform(x_delta[0], x_delta[1])
+        dy = uniform(y_delta[0], y_delta[1])
+
+        return [to_pose(x, y, theta1), to_pose(x + dx, y + dy, theta2)]
+
     
-    def up(self):
-        print("up")
+    def down(self, instance):
+        """Callback that moves a trajectory pose down one"""
+        index = instance.get_index()
+
+        if index == len(self.current_trajectory.poses) - 1:
+            return
+        
+        self.current_trajectory.move_pose(index, -1)
+        self.update_poses()
     
-    def trash(self):
-        print("trash")
+    def up(self, instance):
+        """Callback that moves a trajectory pose up one"""
+        index = instance.get_index()
+
+        if index == 0:
+            return
+        
+        self.current_trajectory.move_pose(index, 1)
+        self.update_poses()
+    
+    def delete_point(self, instance):
+        """Callback to delete trajectory point"""
+
+        if len(self.current_trajectory.poses) == 2:
+            return
+        self.current_trajectory.remove_pose(instance.get_index())
+        self.update_poses()
+        
     
     def on_checkbox_active(self, checkbox, value):
         """https://kivymd.readthedocs.io/en/latest/components/selection-controls/"""
@@ -706,8 +845,20 @@ class MainApp(MDApp):
         # Update values
         for i in range(len(self.screen.ids.point_list.children)):
             c = self.screen.ids.point_list.children[len(self.screen.ids.point_list.children) - i - 1]
-            c.ids.left_container.initial_update(str(self.current_trajectory.poses[i].translation.x), str(self.current_trajectory.poses[i].translation.y), str(self.current_trajectory.poses[i].rotation.get_degrees()))
+            c.ids.left_container.initial_update(self.current_trajectory.poses[i].translation.x, self.current_trajectory.poses[i].translation.y, self.current_trajectory.poses[i].rotation.get_degrees())
         
+        self.update_stats()
+        self.update_points()
+
+    def update_stats(self):
+        """Updates Generation, drive, and length"""
+        self.screen.ids.generation.value = "{:.7f}".format(self.current_trajectory.generation_time)
+        self.screen.ids.drive.value = "{:.3f}".format(self.current_trajectory.drive_time)
+        self.screen.ids.length.value = "{:.3f}".format(self.current_trajectory.length)
+
+        
+
+    
     
 
 
