@@ -51,6 +51,7 @@ from Trajectory.trajectory import Trajectory, mirror_trajectory
 
 from Util.util import limit2
 from Util.jsonIO import JsonIO
+from Util.time_delayed_boolean import TimeDelayedBoolean
 
 RADIUS = 15
 
@@ -322,7 +323,8 @@ Screen:
                                                     on_press: app.mirror_trajectory()
 
                                                 TooltipMDSwitch:
-                                                    on_active: app.on_checkbox_active(*args)
+                                                    id: reverse
+                                                    on_active: app.update_reverse(*args)
                                                     tooltip_text: app.reverse
 
 
@@ -347,6 +349,11 @@ Screen:
                                 Line:
                                     points: app.points
                                     width: 1.7
+                                Color:
+                                    rgba: app.theme_cls.accent_dark
+                                Point:
+                                    points: app.control_points
+                                    pointsize: 4
                             
                             MDGridLayout:
                                 rows: 2
@@ -599,13 +606,21 @@ class MainApp(MDApp):
     poses = [to_pose(300, 800, 45), to_pose(400, 900, -45), to_pose(200, 500, 180.0)]
     trajectory = Trajectory(poses=poses)
     points = ListProperty()
+    control_points = ListProperty()
     reverse = StringProperty("Forward Trajectory")
     jsonIO = JsonIO()
 
     trajectories = []
     current_trajectory = Trajectory()
 
-    
+    timeout = .5
+    max_vel = TimeDelayedBoolean(0, timeout)
+    max_accel = TimeDelayedBoolean(0, timeout)
+    max_centr_accel = TimeDelayedBoolean(0, timeout)
+    start_vel = TimeDelayedBoolean(0, timeout)
+    end_vel = TimeDelayedBoolean(0, timeout)
+
+    prev_reverse = False
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -651,14 +666,16 @@ class MainApp(MDApp):
         item = self.screen.ids.content_drawer.ids.md_list.children[length - self.get_current_index()]
         self.screen.ids.content_drawer.ids.md_list.set_color_item(item)
         
+        self.set_constraints()
+        self.set_reverse()
         # Sync GUI and Mathematical Poses
         self.update_poses()
 
         # Schedule saving trajectories every 500 ms
         Clock.schedule_interval(self.save_trajectories, .5)
 
-        # Draw points
-        self.update_points()
+        # Schedule updating constraints
+        Clock.schedule_interval(self.update_constraints, .5)
 
 
     def on_stop(self):
@@ -670,11 +687,26 @@ class MainApp(MDApp):
         self.jsonIO.save_trajectories(self.trajectories)
 
     def update_points(self):
+        """Updates trajectory lines"""
         point_list = []
         for point in self.current_trajectory.points:
-            point_list.append(point.pose.translation.x * 1.5 + 174)
-            point_list.append(point.pose.translation.y * 1.5 + 689.5)
+            point_list.append(self.translate_x(point.pose.translation.x))
+            point_list.append(self.translate_y(point.pose.translation.y))
         self.points = point_list
+        
+        control_points = []
+        for pose in self.current_trajectory.poses:
+            control_points.append(self.translate_x(pose.translation.x))
+            control_points.append(self.translate_y(pose.translation.y))
+        self.control_points = control_points
+
+    def translate_x(self, x):
+        """Returns x translation from inches to pixels"""
+        return x * 1.5 + 174
+    
+    def translate_y(self, y):
+        """Returns y translation from inches to pixels"""
+        return y * 1.5 + 689.5
 
     def update_name(self, instance):
         """Updates name of current trajectory"""
@@ -804,11 +836,25 @@ class MainApp(MDApp):
         self.update_poses()
         
     
-    def on_checkbox_active(self, checkbox, value):
+    def update_reverse(self, checkbox, value):
         """https://kivymd.readthedocs.io/en/latest/components/selection-controls/"""
         
-        self.reverse = "Reverse Trajectory" if checkbox.active else "Forward Trajectory"
-        print(self.reverse) 
+        slider_state = checkbox.active
+
+        self.reverse = "Reverse Trajectory" if slider_state else "Forward Trajectory"
+        
+        if self.prev_reverse != slider_state:
+            self.current_trajectory.update_reverse(slider_state)
+
+        self.prev_reverse = slider_state
+
+        self.update_stats()
+    
+    def set_reverse(self):
+        """Sets reverse slider"""
+        self.screen.ids.reverse.active = self.current_trajectory.reverse
+
+
 
     def set_active_trajectory(self, selected_instance):
         """Updates Current Trajectory"""
@@ -822,6 +868,10 @@ class MainApp(MDApp):
         self.current_trajectory = self.trajectories[selected_instance.get_index()]
         self.current_trajectory.current = True
         self.update_poses()
+
+        # Update Constraints
+        self.set_constraints()
+        self.set_reverse()
         
 
     def get_current_index(self):
@@ -856,10 +906,49 @@ class MainApp(MDApp):
         self.screen.ids.drive.value = "{:.3f}".format(self.current_trajectory.drive_time)
         self.screen.ids.length.value = "{:.3f}".format(self.current_trajectory.length)
 
-        
+    def update_constraints(self, dt):
+        """Periodically called to update trajectory Constraints"""
 
-    
-    
+        # Temporarily Save Values
+        max_velocity = self.screen.ids.max_vel.ids.slider.value
+        max_acceleration = self.screen.ids.max_accel.ids.slider.value
+        max_centr_acceleration = self.screen.ids.max_centr_accel.ids.slider.value
+        start_velocity = self.screen.ids.start_vel.ids.slider.value
+        end_velocity = self.screen.ids.end_vel.ids.slider.value
+
+        # Check and Update if Necessary
+        if self.max_vel.update(max_velocity):
+            self.current_trajectory.update_constraint(max_velocity, 0)
+        if self.max_accel.update(max_acceleration):
+            self.current_trajectory.update_constraint(max_acceleration, 1)
+        if self.max_centr_accel.update(max_centr_acceleration):
+            self.current_trajectory.update_constraint(max_centr_acceleration, 2)
+        if self.start_vel.update(start_velocity):
+            self.current_trajectory.update_constraint(start_velocity, 3)
+        if self.end_vel.update(end_velocity):
+            self.current_trajectory.update_constraint(end_velocity, 4)
+        
+        self.update_stats()
+
+    def set_constraints(self):
+        """Sets constraints"""
+        max_velocity = self.current_trajectory.max_velocity
+        max_acceleration = self.current_trajectory.max_abs_acceleration
+        max_centr_acceleration = self.current_trajectory.max_centr_acceleration
+        start_velocity = self.current_trajectory.start_velocity
+        end_velocity = self.current_trajectory.end_velocity
+
+        self.max_vel = TimeDelayedBoolean(max_velocity, self.timeout)
+        self.max_accel = TimeDelayedBoolean(max_acceleration, self.timeout)
+        self.max_centr_accel = TimeDelayedBoolean(max_centr_acceleration, self.timeout)
+        self.start_vel = TimeDelayedBoolean(start_velocity, self.timeout)
+        self.end_vel = TimeDelayedBoolean(end_velocity, self.timeout)
+
+        self.screen.ids.max_vel.ids.slider.value = max_velocity
+        self.screen.ids.max_accel.ids.slider.value = max_acceleration
+        self.screen.ids.max_centr_accel.ids.slider.value = max_centr_acceleration
+        self.screen.ids.start_vel.ids.slider.value = start_velocity
+        self.screen.ids.end_vel.ids.slider.value = end_velocity
 
 
 MainApp().run()

@@ -28,6 +28,8 @@ from Spline.quintic_hermite_spline import QuinticHermiteSpline, optimize_spline,
 
 from Trajectory.trajectory_util import parameterize_splines, time_parameterize_trajectory
 
+from Util.util import epsilon_equals
+
 def mirror_trajectory(trajectory):
     """Returns a trajectory mirrored about y = 0"""
     poses = []
@@ -61,6 +63,8 @@ class Trajectory:
         self.max_velocity = max_velocity
         self.max_abs_acceleration = max_abs_acceleration
         self.max_centr_acceleration = max_centr_acceleration
+
+        self.prev_constraints = [max_velocity, max_abs_acceleration, max_centr_acceleration, start_velocity, end_velocity]
 
         if len(self.poses) != 0:
             self.update_splines = True
@@ -168,7 +172,29 @@ class Trajectory:
         self.optimized = False
         self.reparameterize_splines()
 
+    def update_constraint(self, value, index):
+        """Updates constraint if different than previous"""
 
+        if index == 0:
+            self.max_velocity = value
+        elif index == 1:
+            self.max_abs_acceleration = value
+        elif index == 2:
+            self.max_centr_acceleration = value
+        elif index == 3:
+            self.start_velocity = value
+        elif index == 0:
+            self.end_velocity = value
+
+        self.time_parameterize_splines()
+
+    def update_reverse(self, value):
+        """Updates reverse if necessary"""
+
+        self.reverse = value
+
+        self.time_parameterize_splines()
+        
     
 
 
