@@ -64,9 +64,11 @@ class JsonIO:
         data = {}
         for trajectory in trajectories:
             data[trajectory.name] = [self.properties_to_json(trajectory), self.points_to_json(trajectory)]
-        
-        with open(self.file_name, "w") as f:
-            json.dump(data, f, indent=4, sort_keys=True)
+        try:
+            with open(self.file_name, "w") as f:
+                json.dump(data, f, indent=4, sort_keys=True)
+        except PermissionError as ie:
+            print(ie)
 
     def properties_to_json(self, trajectory):
         """Helper method to convert Trajectory properties to list"""

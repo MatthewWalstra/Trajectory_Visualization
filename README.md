@@ -5,7 +5,7 @@ Python application to visualize trajectory profiles on FRC fields.
 
 ## Prerequisites
 
-Create a python virtualenv and install pint, kivy, and kivymd.
+Create a python virtualenv and install kivy and kivymd.
 
 ## Author
 
