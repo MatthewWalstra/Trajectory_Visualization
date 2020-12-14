@@ -57,6 +57,7 @@ class Trajectory:
         self.name = name
         self.poses = poses
         self.splines = []
+        self.points = []
         self.reverse = reverse
         self.start_velocity = start_velocity
         self.end_velocity = end_velocity

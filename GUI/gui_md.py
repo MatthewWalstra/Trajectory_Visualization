@@ -17,6 +17,7 @@ https://www.reddit.com/r/kivy/comments/94wqzk/toolbar_stuck_at_bottom_of_screen/
 """
 
 from random import uniform, randint
+import math
 
 import os, sys
 sys.path.append(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
@@ -28,7 +29,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
 
 from kivy.lang import Builder
 from kivy.uix.boxlayout import BoxLayout
-from kivy.properties import StringProperty, ListProperty, BooleanProperty, NumericProperty
+from kivy.properties import StringProperty, ListProperty, BooleanProperty, NumericProperty, BoundedNumericProperty
 from kivy.clock import Clock
 
 from kivy.core.window import Window
@@ -44,12 +45,16 @@ from kivymd.uix.list import OneLineAvatarIconListItem, MDList, IRightBodyTouch, 
 from kivymd.theming import ThemableBehavior
 from kivymd.uix.boxlayout import MDBoxLayout
 from kivymd.uix.gridlayout import MDGridLayout
+from kivymd.uix.floatlayout import MDFloatLayout
+
+#from GUI.robot_model import RobotModel
 
 from Geometry.pose import to_pose, Pose
 from Geometry.rotation import from_degrees
 from Trajectory.trajectory import Trajectory, mirror_trajectory
+from Trajectory.trajectory_iterator import TrajectoryIterator
 
-from Util.util import limit2
+from Util.util import limit2, epsilon_equals
 from Util.jsonIO import JsonIO
 from Util.time_delayed_boolean import TimeDelayedBoolean
 
@@ -308,6 +313,7 @@ Screen:
 
                                                 RelativeLayout:
                                                     MDSlider:
+                                                        id: time
                                                         pos: 0, -7.5
                                                         min: 0
                                                         max: 100
@@ -339,6 +345,7 @@ Screen:
                             
                             
                         MDBoxLayout:
+                            id: drawing
                             orientation: "vertical"
                             size_hint: .5, 0
                             radius: [6, 6, 6, 6]
@@ -354,6 +361,87 @@ Screen:
                                 Point:
                                     points: app.control_points
                                     pointsize: 4
+
+                                Rotate:
+                                    id: rot
+                                    angle: app.angle
+                                    axis: 0,0,1
+                                    origin: app.origin
+                                
+                                #Color:
+                                #    rgba: app.theme_cls.bg_light
+                                
+                                #Point:
+                                #    points: app.origin
+                                #    pointsize: 22.5
+                                
+                                Color: 
+                                    rgba: app.theme_cls.bg_darkest
+                                # Wheels
+                                # Front Left
+                                RoundedRectangle:
+                                    pos: app.origin[0] + (app.pos_scalar - app.wheel[0] * 3 / 4) * app.scalar, app.origin[1] + (app.pos_scalar - app.wheel[1] / 2) * app.scalar
+                                    size: app.wheel[0] * app.scalar, app.wheel[1] * app.scalar
+                                    radius: app.radius
+                                
+                                # Back Left
+                                RoundedRectangle:
+                                    pos: app.origin[0] - (app.pos_scalar + app.wheel[0] / 4) * app.scalar, app.origin[1] + (app.pos_scalar - app.wheel[1] / 2) * app.scalar
+                                    size: app.wheel[0] * app.scalar, app.wheel[1] * app.scalar
+                                    radius: app.radius
+                                
+                                # Front Right
+                                RoundedRectangle:
+                                    pos: app.origin[0] + (app.pos_scalar - app.wheel[0] * 3 / 4) * app.scalar, app.origin[1] - (app.pos_scalar + app.wheel[1] / 2) * app.scalar
+                                    size: app.wheel[0] * app.scalar, app.wheel[1] * app.scalar
+                                    radius: app.radius
+
+                                # Back Right
+                                RoundedRectangle:
+                                    pos: app.origin[0] - (app.pos_scalar + app.wheel[0] / 4) * app.scalar, app.origin[1] - (app.pos_scalar + app.wheel[1] / 2) * app.scalar
+                                    size: app.wheel[0] * app.scalar, app.wheel[1] * app.scalar
+                                    radius: app.radius
+
+                                #Center
+                                Ellipse:
+                                    pos: app.origin[0] - app.scalar * app.center_scalar / 2, app.origin[1] - app.scalar * app.center_scalar / 2
+                                    size: app.scalar * app.center_scalar, app.scalar * app.center_scalar
+
+                                #Color: 
+                                #    rgba: app.theme_cls.primary_color
+                                #Point:
+                                #    points: app.origin[0] + app.pos_scalar * app.scalar, app.origin[1] + app.pos_scalar * app.scalar, app.origin[0], app.origin[1], app.origin[0] + app.pos_scalar * app.scalar, app.origin[1] - app.pos_scalar * app.scalar, app.origin[0] - app.pos_scalar * app.scalar, app.origin[1] + app.pos_scalar * app.scalar, app.origin[0] - app.pos_scalar * app.scalar, app.origin[1] - app.pos_scalar * app.scalar,
+                                #    pointsize: app.scalar / 4
+
+                                # Vectors
+                                # Velocity
+                                Color:
+                                    rgba: 1,0,0,1
+                                Triangle:
+                                    points: (app.origin[0] + app.vel_length * app.scalar - app.radius[0] + 2.2 * app.scalar, app.origin[1] + app.scalar * app.vector_scalar * app.triangle_scalar, app.origin[0] + app.vel_length * app.scalar - app.radius[0] + 2.2 * app.scalar, app.origin[1] - app.scalar * app.vector_scalar * app.triangle_scalar, app.origin[0] + app.vel_length * app.scalar - app.radius[0] + app.scalar * app.vector_scalar * app.triangle_scalar * 2 + 2.2 * app.scalar, app.origin[1]) if app.iterator.start_t < app.current_time < app.iterator.end_t - .01 else [-5,-5,-5,-5,-5,-5]
+                                    #radius: app.radius
+
+                                RoundedRectangle: 
+                                    pos: [app.origin[0] + 2.2 * app.scalar, app.origin[1] - (app.wheel[1] * app.scalar * app.vector_scalar) / 2] if (app.iterator.start_t + .01 < app.current_time < app.iterator.end_t - .1)  else [1e5,1e5]
+                                    size: [app.vel_length * app.scalar, app.wheel[1] * app.scalar * app.vector_scalar] if app.iterator.start_t < app.current_time < app.iterator.end_t else [0.01,0.01]
+                                    radius: app.radius
+
+                                # Acceleration
+                                Rotate:
+                                    id: rot
+                                    angle: app.accel_angle
+                                    axis: 0,0,1
+                                    origin: app.origin
+                                Color:
+                                    rgba: 1,1,0,1 #app.theme_cls.accent_dark
+                                Triangle:
+                                    points: (app.origin[0] + app.accel_length * app.scalar - app.radius[0] + 2.2 * app.scalar, app.origin[1] + app.scalar * app.vector_scalar * app.triangle_scalar, app.origin[0] + app.accel_length * app.scalar - app.radius[0] + 2.2 * app.scalar, app.origin[1] - app.scalar * app.vector_scalar * app.triangle_scalar, app.origin[0] + app.accel_length * app.scalar - app.radius[0] + app.scalar * app.vector_scalar * app.triangle_scalar * 2 + 2.2 * app.scalar, app.origin[1]) if (app.iterator.start_t < app.current_time < app.iterator.end_t - .01) and not (app.accel_length < .05) else [-5,-5,-5,-5,-5,-5]
+                                    
+
+                                RoundedRectangle: 
+                                    pos: [app.origin[0] + 2.2 * app.scalar, app.origin[1] - (app.wheel[1] * app.scalar * app.vector_scalar) / 2] if (app.iterator.start_t + .01 < app.current_time < app.iterator.end_t - .01) else [1e5,1e5]
+                                    size: [app.accel_length * app.scalar, app.wheel[1] * app.scalar * app.vector_scalar] if (app.iterator.start_t < app.current_time < app.iterator.end_t) else [0.01,0.01]
+                                    radius: app.radius
                             
                             MDGridLayout:
                                 rows: 2
@@ -430,7 +518,7 @@ Screen:
                                         tooltip_text: "Add Trajectory"
                                         on_press: app.add_trajectory()
 
-                        
+                                
 
                         
 
@@ -612,6 +700,7 @@ class MainApp(MDApp):
 
     trajectories = []
     current_trajectory = Trajectory()
+    iterator = TrajectoryIterator(current_trajectory)
 
     timeout = .5
     max_vel = TimeDelayedBoolean(0, timeout)
@@ -621,6 +710,25 @@ class MainApp(MDApp):
     end_vel = TimeDelayedBoolean(0, timeout)
 
     prev_reverse = False
+    prev_time = 0.0
+    animation_active = False
+    current_time = 0
+    dt = .04
+
+    s = 4.7
+    origin = ListProperty([500,500])
+    angle = NumericProperty(0)
+    scalar = NumericProperty(s)
+    wheel = ListProperty([2.5, 1.25])
+    pos_scalar = NumericProperty(4)
+    radius = ListProperty([s / 5, s / 5])
+    vel_length = NumericProperty(0)
+    accel_length = NumericProperty(0)
+    accel_angle = NumericProperty(0)
+    vector_scalar = NumericProperty(.6)
+    triangle_scalar = NumericProperty(2)
+    center_scalar = NumericProperty(2)
+
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -655,6 +763,9 @@ class MainApp(MDApp):
         if update and len(self.trajectories) > 0:
             self.current_trajectory = self.trajectories[0]
 
+        self.iterator = TrajectoryIterator(self.current_trajectory)
+        self.reset_animation()
+        
         # Add each trajectory
         for trajectory in self.trajectories:
             self.screen.ids.content_drawer.ids.md_list.add_widget(
@@ -675,7 +786,7 @@ class MainApp(MDApp):
         Clock.schedule_interval(self.save_trajectories, .5)
 
         # Schedule updating constraints
-        Clock.schedule_interval(self.update_constraints, .5)
+        Clock.schedule_interval(self.update_constraints, self.dt)
 
 
     def on_stop(self):
@@ -699,6 +810,9 @@ class MainApp(MDApp):
             control_points.append(self.translate_x(pose.translation.x))
             control_points.append(self.translate_y(pose.translation.y))
         self.control_points = control_points
+        
+
+        self.reset_animation()
 
     def translate_x(self, x):
         """Returns x translation from inches to pixels"""
@@ -730,7 +844,9 @@ class MainApp(MDApp):
         self.add_trajectory(mirror_trajectory(self.current_trajectory))
 
     def animate_trajectory(self):
-        print("Animate Trajectory")
+        if self.iterator.end_t < self.current_time:
+            self.reset_animation()
+        self.animation_active = not self.animation_active
 
     def add_point(self):
         """Adds a point to current trajectory"""
@@ -867,11 +983,19 @@ class MainApp(MDApp):
         # Update Current Trajectory
         self.current_trajectory = self.trajectories[selected_instance.get_index()]
         self.current_trajectory.current = True
+        
+        # Update Trajectory Iterator
+        self.iterator = TrajectoryIterator(self.current_trajectory)
+        self.reset_animation()
         self.update_poses()
 
         # Update Constraints
         self.set_constraints()
         self.set_reverse()
+
+        # Update Time Slider
+        self.screen.ids.time.min = self.iterator.start_t
+        self.screen.ids.time.max = self.iterator.end_t
         
 
     def get_current_index(self):
@@ -905,6 +1029,7 @@ class MainApp(MDApp):
         self.screen.ids.generation.value = "{:.7f}".format(self.current_trajectory.generation_time)
         self.screen.ids.drive.value = "{:.3f}".format(self.current_trajectory.drive_time)
         self.screen.ids.length.value = "{:.3f}".format(self.current_trajectory.length)
+        self.screen.ids.current_vel.value = "{:.3f}".format(self.iterator.current_sample.velocity)
 
     def update_constraints(self, dt):
         """Periodically called to update trajectory Constraints"""
@@ -917,18 +1042,39 @@ class MainApp(MDApp):
         end_velocity = self.screen.ids.end_vel.ids.slider.value
 
         # Check and Update if Necessary
+        updated = False
         if self.max_vel.update(max_velocity):
             self.current_trajectory.update_constraint(max_velocity, 0)
+            updated = True
         if self.max_accel.update(max_acceleration):
             self.current_trajectory.update_constraint(max_acceleration, 1)
+            updated = True
         if self.max_centr_accel.update(max_centr_acceleration):
             self.current_trajectory.update_constraint(max_centr_acceleration, 2)
+            updated = True
         if self.start_vel.update(start_velocity):
             self.current_trajectory.update_constraint(start_velocity, 3)
+            updated = True
         if self.end_vel.update(end_velocity):
             self.current_trajectory.update_constraint(end_velocity, 4)
+            updated = True
         
-        self.update_stats()
+        
+
+        if updated:
+            self.update_stats()
+            self.reset_animation()
+
+        if self.animation_active:
+            self.update_animation(dt)
+            self.update_stats()
+        elif not (self.animation_active or epsilon_equals(self.prev_time, self.screen.ids.time.value)):
+            self.calculate_model(self.screen.ids.time.value)
+            self.update_stats()
+        
+        self.prev_time = self.screen.ids.time.value
+
+
 
     def set_constraints(self):
         """Sets constraints"""
@@ -950,5 +1096,39 @@ class MainApp(MDApp):
         self.screen.ids.start_vel.ids.slider.value = start_velocity
         self.screen.ids.end_vel.ids.slider.value = end_velocity
 
+    def reset_animation(self):
+        """Resets Trajectory Animation"""
+        self.calculate_model(0.0)
+        self.animation_active = False
+        self.iterator.reset()
+        self.screen.ids.time.min = self.iterator.start_t
+        self.screen.ids.time.max = self.iterator.end_t
+
+    def update_animation(self, dt):
+        """Updates Trajectory Animation"""
+        self.calculate_model(self.current_time + dt)
+        if self.current_time > self.iterator.end_t:
+            self.animation_active = False
+        
+    
+    def calculate_model(self, t):
+        """Calculates parameters for the model and updates drawing"""
+        
+        self.current_time  = t
+        self.screen.ids.time.value = t
+        point = self.iterator.advance(t)
+        self.origin = [self.translate_x(point.pose.translation.x), self.translate_y(point.pose.translation.y)]
+        
+        self.angle = point.pose.rotation.get_degrees()
+        self.vel_length = 5.4 * point.velocity / self.current_trajectory.max_velocity
+        
+        centr = point.velocity ** 2 * point.pose.curvature / self.current_trajectory.max_centr_acceleration
+        linear = point.acceleration / self.current_trajectory.max_abs_acceleration
+
+        
+        self.accel_length = 5.4 * math.hypot(centr, linear)
+        if epsilon_equals(self.accel_length, 0):
+            self.accel_length = .01
+        self.accel_angle = math.degrees(math.atan2(centr, linear))
 
 MainApp().run()
