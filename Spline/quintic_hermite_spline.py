@@ -171,6 +171,9 @@ def fit_parabola(p1, p2, p3):
     """Returns the x-coordinate of the vertex of the parabola"""
     a = p3.x * (p2.y - p1.y) + p2.x * (p1.y - p3.y) + p1.x * (p3.y - p2.y)
     b = p3.x * p3.x * (p1.y - p2.y) + p2.x * p2.x * (p3.y - p1.y) + p1.x * p1.x * (p2.y - p3.y)
+    if epsilon_equals(a, 0):
+        # Raises a divide by zero error because they're colinear
+        return 0.0
     return -b/(2 * a)
 
 class QuinticHermiteSpline:

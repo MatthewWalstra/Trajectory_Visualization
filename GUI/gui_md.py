@@ -31,6 +31,7 @@ from kivy.lang import Builder
 from kivy.uix.boxlayout import BoxLayout
 from kivy.properties import StringProperty, ListProperty, BooleanProperty, NumericProperty, BoundedNumericProperty
 from kivy.clock import Clock
+from kivy.graphics import Line, Ellipse, Color, Rotate
 
 from kivy.core.window import Window
 Window.size = (1920, 1080) # Adjust for your monitor resolution, esc to exit
@@ -235,8 +236,9 @@ KV = '''
 
 Screen:
     NavigationLayout:
-        ScreenManager:
+        ScreenManager: 
             Screen:
+                id: control_points
                 GridLayout:
                     rows: 2
                     cols: 1
@@ -251,6 +253,7 @@ Screen:
                         rows: 1
                         cols: 2
                         padding: [10,10,10,10]
+                        
 
                         GridLayout:
                             rows: 2
@@ -296,6 +299,7 @@ Screen:
                                                 spacing: [15,0]
 
                                                 MDTextField:
+                                                    id: title
                                                     hint_text: "Trajectory Title"
                                                     color_mode: "custom"
                                                     line_color_focus: 1,1,1,1
@@ -407,16 +411,10 @@ Screen:
                                     pos: app.origin[0] - app.scalar * app.center_scalar / 2, app.origin[1] - app.scalar * app.center_scalar / 2
                                     size: app.scalar * app.center_scalar, app.scalar * app.center_scalar
 
-                                #Color: 
-                                #    rgba: app.theme_cls.primary_color
-                                #Point:
-                                #    points: app.origin[0] + app.pos_scalar * app.scalar, app.origin[1] + app.pos_scalar * app.scalar, app.origin[0], app.origin[1], app.origin[0] + app.pos_scalar * app.scalar, app.origin[1] - app.pos_scalar * app.scalar, app.origin[0] - app.pos_scalar * app.scalar, app.origin[1] + app.pos_scalar * app.scalar, app.origin[0] - app.pos_scalar * app.scalar, app.origin[1] - app.pos_scalar * app.scalar,
-                                #    pointsize: app.scalar / 4
-
                                 # Vectors
                                 # Velocity
                                 Color:
-                                    rgba: 1,0,0,1
+                                    rgba: 1,0,0,.7
                                 Triangle:
                                     points: (app.origin[0] + app.vel_length * app.scalar - app.radius[0] + 2.2 * app.scalar, app.origin[1] + app.scalar * app.vector_scalar * app.triangle_scalar, app.origin[0] + app.vel_length * app.scalar - app.radius[0] + 2.2 * app.scalar, app.origin[1] - app.scalar * app.vector_scalar * app.triangle_scalar, app.origin[0] + app.vel_length * app.scalar - app.radius[0] + app.scalar * app.vector_scalar * app.triangle_scalar * 2 + 2.2 * app.scalar, app.origin[1]) if app.iterator.start_t < app.current_time < app.iterator.end_t - .01 else [-5,-5,-5,-5,-5,-5]
                                     #radius: app.radius
@@ -433,7 +431,7 @@ Screen:
                                     axis: 0,0,1
                                     origin: app.origin
                                 Color:
-                                    rgba: 1,1,0,1 #app.theme_cls.accent_dark
+                                    rgba: 1,1,0,.8
                                 Triangle:
                                     points: (app.origin[0] + app.accel_length * app.scalar - app.radius[0] + 2.2 * app.scalar, app.origin[1] + app.scalar * app.vector_scalar * app.triangle_scalar, app.origin[0] + app.accel_length * app.scalar - app.radius[0] + 2.2 * app.scalar, app.origin[1] - app.scalar * app.vector_scalar * app.triangle_scalar, app.origin[0] + app.accel_length * app.scalar - app.radius[0] + app.scalar * app.vector_scalar * app.triangle_scalar * 2 + 2.2 * app.scalar, app.origin[1]) if (app.iterator.start_t < app.current_time < app.iterator.end_t - .01) and not (app.accel_length < .05) else [-5,-5,-5,-5,-5,-5]
                                     
@@ -442,6 +440,12 @@ Screen:
                                     pos: [app.origin[0] + 2.2 * app.scalar, app.origin[1] - (app.wheel[1] * app.scalar * app.vector_scalar) / 2] if (app.iterator.start_t + .01 < app.current_time < app.iterator.end_t - .01) else [1e5,1e5]
                                     size: [app.accel_length * app.scalar, app.wheel[1] * app.scalar * app.vector_scalar] if (app.iterator.start_t < app.current_time < app.iterator.end_t) else [0.01,0.01]
                                     radius: app.radius
+                                
+                                Rotate:
+                                    id: rot
+                                    angle:  - (app.accel_angle + app.angle)
+                                    axis: 0,0,1
+                                    origin: app.origin
                             
                             MDGridLayout:
                                 rows: 2
@@ -777,6 +781,8 @@ class MainApp(MDApp):
         item = self.screen.ids.content_drawer.ids.md_list.children[length - self.get_current_index()]
         self.screen.ids.content_drawer.ids.md_list.set_color_item(item)
         
+        self.screen.ids.title.text = self.current_trajectory.name
+
         self.set_constraints()
         self.set_reverse()
         # Sync GUI and Mathematical Poses
@@ -805,14 +811,21 @@ class MainApp(MDApp):
             point_list.append(self.translate_y(point.pose.translation.y))
         self.points = point_list
         
-        control_points = []
-        for pose in self.current_trajectory.poses:
-            control_points.append(self.translate_x(pose.translation.x))
-            control_points.append(self.translate_y(pose.translation.y))
-        self.control_points = control_points
+        with self.screen.ids.control_points.canvas.after:
+            #Rotate(angle=-self.angle)
+            self.screen.ids.control_points.canvas.after.clear()
+            Color(self.theme_cls.primary_dark[0],self.theme_cls.primary_dark[1],self.theme_cls.primary_dark[2],self.theme_cls.primary_dark[3])
+            radius = 50 / 8
+            for pose in self.current_trajectory.poses:
+                
+                Line(circle=(self.translate_x(pose.translation.x), self.translate_y(pose.translation.y), radius), width= 1.1, color=self.theme_cls.primary_color)
+                
+                
+                Ellipse(size=(radius,radius), pos=(self.translate_x(pose.translation.x) - radius/2, self.translate_y(pose.translation.y) - radius/2))
         
 
         self.reset_animation()
+        self.update_stats()
 
     def translate_x(self, x):
         """Returns x translation from inches to pixels"""
@@ -983,7 +996,8 @@ class MainApp(MDApp):
         # Update Current Trajectory
         self.current_trajectory = self.trajectories[selected_instance.get_index()]
         self.current_trajectory.current = True
-        
+        self.screen.ids.title.text = self.current_trajectory.name
+
         # Update Trajectory Iterator
         self.iterator = TrajectoryIterator(self.current_trajectory)
         self.reset_animation()
@@ -1058,8 +1072,6 @@ class MainApp(MDApp):
         if self.end_vel.update(end_velocity):
             self.current_trajectory.update_constraint(end_velocity, 4)
             updated = True
-        
-        
 
         if updated:
             self.update_stats()
@@ -1114,18 +1126,23 @@ class MainApp(MDApp):
     def calculate_model(self, t):
         """Calculates parameters for the model and updates drawing"""
         
+        # Updates Time and gets next trajectory point
         self.current_time  = t
         self.screen.ids.time.value = t
         point = self.iterator.advance(t)
+        
+        # Update Velocity
         self.origin = [self.translate_x(point.pose.translation.x), self.translate_y(point.pose.translation.y)]
         
         self.angle = point.pose.rotation.get_degrees()
-        self.vel_length = 5.4 * point.velocity / self.current_trajectory.max_velocity
+        self.vel_length = 5.4 * abs(point.velocity) / self.current_trajectory.max_velocity
         
+
+        # Update Acceleration
         centr = point.velocity ** 2 * point.pose.curvature / self.current_trajectory.max_centr_acceleration
         linear = point.acceleration / self.current_trajectory.max_abs_acceleration
 
-        
+        # If zero width, it leaves previous shape, so have small width
         self.accel_length = 5.4 * math.hypot(centr, linear)
         if epsilon_equals(self.accel_length, 0):
             self.accel_length = .01

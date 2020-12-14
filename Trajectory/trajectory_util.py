@@ -65,7 +65,9 @@ def get_segment_arc(spline, points, t0, t1, max_dx, max_dy, max_dtheta):
     twist = Pose().log(transformation)
     
     # Recursively divide segment arc in half until twist is smaller than max
-    if (abs(twist.dy) > abs(max_dy) or abs(twist.dx) > max_dx or twist.dtheta > max_dtheta): 
+    twist.dtheta -= math.copysign(math.pi, twist.dtheta) if abs(twist.dtheta) > (math.pi / 2) else 0
+    
+    if (abs(twist.dy) > max_dy or abs(twist.dx) > max_dx or abs(twist.dtheta) > max_dtheta): 
         get_segment_arc(spline, points, t0, (t0 + t1) / 2.0, max_dx, max_dy, max_dtheta)
         get_segment_arc(spline, points, (t0 + t1) / 2.0, t1, max_dx, max_dy, max_dtheta)
     else:

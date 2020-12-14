@@ -61,7 +61,6 @@ class Pose:
         
         tmp_rot = Rotation(halfdtheta_by_tan_halfdtheta, -half_dtheta, False)
         tmp_trans = transform.translation.rotate(tmp_rot)
-
         return Twist(tmp_trans.x, tmp_trans.y, dtheta)
         
     def transform(self, other):
