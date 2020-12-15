@@ -5,3 +5,6 @@ https://github.com/MatthewWalstra/Trajectory_Visualization
 
 Please Note:
 It requires installing kivy and kivymd with pip or another package manager
+
+Run application:
+Run GUI/gui_md.py
