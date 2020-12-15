@@ -64,9 +64,10 @@ def get_segment_arc(spline, points, t0, t1, max_dx, max_dy, max_dtheta):
     transformation = Pose(Translation(p1.x - p0.x, p1.y - p0.y).rotate(r0.inverse()), r1.rotate(r0.inverse())) 
     twist = Pose().log(transformation)
     
-    # Recursively divide segment arc in half until twist is smaller than max
+    # Wrap dtheta, so it's -pi to pi
     twist.dtheta -= math.copysign(math.pi, twist.dtheta) if abs(twist.dtheta) > (math.pi / 2) else 0
     
+    # Recursively divide segment arc in half until twist is smaller than max
     if (abs(twist.dy) > max_dy or abs(twist.dx) > max_dx or abs(twist.dtheta) > max_dtheta): 
         get_segment_arc(spline, points, t0, (t0 + t1) / 2.0, max_dx, max_dy, max_dtheta)
         get_segment_arc(spline, points, (t0 + t1) / 2.0, t1, max_dx, max_dy, max_dtheta)
@@ -122,6 +123,7 @@ def time_parameterize_trajectory(reverse, trajectory_points, start_velocity, end
 
         successor = state
 
+    # Integrate for time and calculate Acceleration
     t = 0.0
     s = 0.0
     v = 0.0
@@ -131,6 +133,7 @@ def time_parameterize_trajectory(reverse, trajectory_points, start_velocity, end
         accel = 0.0
         dt = 0.0
 
+        # Skip first point otherwise index will be out of range.
         if (i > 0):
             accel = (state.velocity * state.velocity - v * v) / (2.0 * ds)
             trajectory_points[i - 1].acceleration = (-accel if reverse else accel)
@@ -178,6 +181,8 @@ def get_max_drivetrain_velocity(trajectory_point, max_velocity):
 
 def get_max_centripetal_velocity(trajectory_point, max_centr_accel):
     """Returns max centripetal velocity"""
+    
+    # Avoid ZeroDivisionError
     if epsilon_equals(trajectory_point.pose.curvature, 0.0):
         return 1e4
     return math.sqrt(abs(max_centr_accel / trajectory_point.pose.curvature))

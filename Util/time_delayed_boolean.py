@@ -32,7 +32,7 @@ class TimeDelayedBoolean:
         self.first = False
 
     def update(self, value):
-        """Returns True if value changes and is equivalent for a set amount of time"""
+        """Returns True once if equivalent for a set amount of time"""
         
         # Not the same, so reset timer, update prev_value, and return False
         if (not epsilon_equals(value, self.prev_value)):
@@ -43,8 +43,9 @@ class TimeDelayedBoolean:
 
         dt = time.perf_counter() - self.start_time
         return_value = False
-        
+    
         if (dt >= self.timeout) and (self.first):
+            # First time over the set time, set false to not repeat
             self.first = False
             return_value = True
         

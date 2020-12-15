@@ -48,8 +48,6 @@ from kivymd.uix.boxlayout import MDBoxLayout
 from kivymd.uix.gridlayout import MDGridLayout
 from kivymd.uix.floatlayout import MDFloatLayout
 
-#from GUI.robot_model import RobotModel
-
 from Geometry.pose import to_pose, Pose
 from Geometry.rotation import from_degrees
 from Trajectory.trajectory import Trajectory, mirror_trajectory
@@ -81,11 +79,13 @@ KV = '''
         text_color: root.text_color
         on_press: root.parent.remove_child(root)
 
+# Declares inherited class from tooltip and button
 <TooltipMDIconButton@MDIconButton+MDTooltip>
 <TooltipMDFloatingActionButton@MDFloatingActionButton+MDTooltip>
 <TooltipMDCheckbox@MDCheckbox+MDTooltip>
 <TooltipMDSwitch@MDSwitch+MDTooltip>
 
+# Declares Point Drawers
 <PointDrawer>:
     on_size:
         self.ids._right_container.width = right_container.width
@@ -105,7 +105,7 @@ KV = '''
             on_press: app.delete_point(self.parent)
             tooltip_text: "Delete"
 
-    VerticalContainer:
+    LeftContainer:
         id: left_container
 
         GridLayout:
@@ -147,7 +147,7 @@ KV = '''
             color_mode: "custom"
             line_color_focus: 1,1,1,1    
     
-
+# Declares Trajectory Navigation Drawer
 <ContentNavigationDrawer>:
     orientation: "vertical"
     padding: "8dp"
@@ -168,6 +168,7 @@ KV = '''
         DrawerList:
             id: md_list
 
+# Declare Stat Label
 <StatLabel>:
     orientation: "vertical"
     size_hint: 1, 1
@@ -198,6 +199,7 @@ KV = '''
         halign: "center"
         font_style: "H3"
 
+# Declares Slider layout
 <SliderLayout>:
     orientation: "vertical"
     padding: 20,1
@@ -229,14 +231,16 @@ KV = '''
                 pos: 0, -12.5
                 text: "{:.4f}".format(self.parent.parent.parent.ids.slider.value)
                 #size_hint: .4, 1
-                on_text_validate: self.parent.parent.parent.test()
+                on_text_validate: self.parent.parent.parent.update()
                 color_mode: "custom"
                 line_color_focus: app.theme_cls.opposite_bg_dark
                 halign: "center"
-
+# Root
 Screen:
     NavigationLayout:
         ScreenManager: 
+            
+            # Main Screen
             Screen:
                 id: control_points
                 GridLayout:
@@ -249,24 +253,27 @@ Screen:
                         left_action_items: [["menu", lambda x: nav_drawer.set_state("open")]]
                         right_action_items: [["window-close", lambda x: app.close_application()]]
                     
+                    # Bottom layout
                     GridLayout:
                         rows: 1
                         cols: 2
                         padding: [10,10,10,10]
                         
-
+                        # Right Side Container
                         GridLayout:
                             rows: 2
                             cols: 1
                             padding: [0,0,10,0]
                             spacing: [0,10]
 
+                            # Size and Background Color of Field Container
                             MDFloatLayout:
                                 size: (100,100)
                                 
                                 radius: [6, 6, 6, 6]
                                 md_bg_color: app.theme_cls.bg_darkest
                                 
+                                # Set Field Image
                                 RelativeLayout:
                                     pos: -740, -10
                                     
@@ -274,22 +281,26 @@ Screen:
                                         source: "Images/2020-field.png"
                                         size_hint: 2.2, 2.2
                                         
-                                                                        
+                            # Set Size and Background Color of Point Container                                      
                             MDFloatLayout:
                                 size: (100,100)
                                 size_hint: 0, .55
                                 radius: [6, 6, 6, 6]
                                 md_bg_color: app.theme_cls.bg_darkest
-                            
+
+                                # Point Container
                                 GridLayout:
                                     rows: 2
                                     cols: 1
                                     padding: [10,-10,-10,15]
 
+                                    # Set Size and background Color of Navigation Bar
                                     MDFloatLayout:
                                         size_hint: 1, .25
                                         radius: [6, 6, 6, 6]
                                         md_bg_color: app.theme_cls.primary_dark
+                                        
+                                        # Point Navigation Bar
                                         RelativeLayout:
                                             pos: 20, 300
                                             GridLayout:
@@ -298,6 +309,7 @@ Screen:
                                                 padding: [20, 0, 20, 0]
                                                 spacing: [15,0]
 
+                                                # Trajectory Name
                                                 MDTextField:
                                                     id: title
                                                     hint_text: "Trajectory Title"
@@ -305,16 +317,19 @@ Screen:
                                                     line_color_focus: 1,1,1,1
                                                     on_text_validate: app.update_name(self)
 
+                                                # Optimize Trajectory Button
                                                 TooltipMDIconButton:
                                                     icon: "sync"
                                                     tooltip_text: "Optimize Trajectory"
                                                     on_press: app.optimize_trajectory()
-                                                    
+
+                                                # Play/Pause Animation Button 
                                                 TooltipMDIconButton:
                                                     icon: "animation-play"
                                                     tooltip_text: "Run Animation"
                                                     on_press: app.animate_trajectory()
 
+                                                # Animation Time Slider
                                                 RelativeLayout:
                                                     MDSlider:
                                                         id: time
@@ -326,34 +341,39 @@ Screen:
                                                         color: 1,1,1,1
                                                         show_off: False
                                                     
-
+                                                # Mirror Trajectory Button
                                                 TooltipMDIconButton:
                                                     icon: "flip-vertical"
                                                     tooltip_text: "Mirror Trajectory"
                                                     on_press: app.mirror_trajectory()
 
+                                                
+                                                # Reverses Trajectory Slider: Robot Drives Backwards
                                                 TooltipMDSwitch:
                                                     id: reverse
                                                     on_active: app.update_reverse(*args)
                                                     tooltip_text: app.reverse
 
-
+                                                # Add Point Button
                                                 TooltipMDIconButton:
                                                     icon: "plus"
                                                     tooltip_text: "Add Point" 
                                                     on_press: app.add_point()
-                                                
+
+                                    # Point Container            
                                     ScrollView:
                                         MDList:
                                             id: point_list
                             
-                            
+                        # Right Side Layout: Stats, Constraints, and Add Trajectory Button    
                         MDBoxLayout:
                             id: drawing
                             orientation: "vertical"
                             size_hint: .5, 0
                             radius: [6, 6, 6, 6]
                             md_bg_color: app.theme_cls.bg_darkest
+                            
+                            # Draws Trajectory and Robot Model
                             canvas.after:
                                 Color:
                                     rgba: app.theme_cls.accent_color
@@ -362,9 +382,6 @@ Screen:
                                     width: 1.7
                                 Color:
                                     rgba: app.theme_cls.accent_dark
-                                Point:
-                                    points: app.control_points
-                                    pointsize: 4
 
                                 Rotate:
                                     id: rot
@@ -447,6 +464,7 @@ Screen:
                                     axis: 0,0,1
                                     origin: app.origin
                             
+                            # Stat Label Container
                             MDGridLayout:
                                 rows: 2
                                 cols: 2
@@ -454,29 +472,36 @@ Screen:
                                 padding: 10
                                 size_hint: 1, .6
 
+                                # Generation Time Stat Label
                                 StatLabel:
                                     id: generation
                                     text: "Generation Time (s)"
                                     value: "0"
-                                    
+                                
+                                # Drive Time Stat Label
                                 StatLabel:
                                     id: drive
                                     text: "Drive Time (s)"
                                     value: "0"
 
+                                # Trajectory Length Stat Label
                                 StatLabel:
                                     id: length
                                     text: "Trajectory Length (in)"
                                     value: "0"
-                                    
+                                
+                                # Current Velocity Stat Label
                                 StatLabel:
                                     id: current_vel
                                     text: "Current Velocity (in/s)"
                                     value: "0"
-                                    
+                            
+                            # Container for Constraint Sliders
                             MDBoxLayout:
                                 orientation: "vertical"    
                                 size_hint: 1, 1
+                                
+                                # Max Velocity Slider
                                 SliderLayout:
                                     id: max_vel
                                     text: "Max Velocity (in/s)"
@@ -484,6 +509,7 @@ Screen:
                                     min_v: 0
                                     max_v: 200
                                 
+                                # Max Linear Acceleration Slider
                                 SliderLayout:
                                     id: max_accel
                                     text: "Max Acceleration (in/s^2)"
@@ -491,6 +517,7 @@ Screen:
                                     min_v: 0
                                     max_v: 200
 
+                                # Max Centripetal Acceleration Slider
                                 SliderLayout:
                                     id: max_centr_accel
                                     text: "Max Centripetal Acceleration (in/s^2)"
@@ -498,12 +525,15 @@ Screen:
                                     min_v: 0
                                     max_v: 200
 
+                                # Start Velocity Slider
                                 SliderLayout:
                                     id: start_vel
                                     text: "Start Velocity (in/s)"
                                     value: 0
                                     min_v: -root.ids.max_vel.ids.slider.value
                                     max_v: root.ids.max_vel.ids.slider.value
+                                
+                                # End Velocity Slider
                                 SliderLayout:
                                     id: end_vel
                                     text: "End Velocity (in/s)"
@@ -511,7 +541,7 @@ Screen:
                                     min_v: -root.ids.max_vel.ids.slider.value
                                     max_v: root.ids.max_vel.ids.slider.value
 
-                            
+                                # Add Trajectory Button
                                 RelativeLayout:
                                     TooltipMDFloatingActionButton:
                                         icon: "plus"
@@ -521,13 +551,8 @@ Screen:
                                         shift_y: 200
                                         tooltip_text: "Add Trajectory"
                                         on_press: app.add_trajectory()
-
-                                
-
-                        
-
-
         
+        # Creates Trajectory Navigation Drawer
         MDNavigationDrawer:
             id: nav_drawer
             
@@ -535,7 +560,8 @@ Screen:
                 id: content_drawer
 '''
 
-class VerticalContainer(ILeftBody, MDGridLayout):
+class LeftContainer(ILeftBody, MDGridLayout):
+    """Left Container for Point Drawer"""
     #adaptive_width = True
     #orientation = "horizontal"
     cols = 4
@@ -554,7 +580,7 @@ class VerticalContainer(ILeftBody, MDGridLayout):
         self.prev_theta = "{:.3f}".format(theta)
 
     def update_x(self):
-        """Updates x"""
+        """Updates pose x"""
         try:
             value = float(self.children[2].text)
             value = limit2(value, 0 + RADIUS, 629.25 - RADIUS)
@@ -570,7 +596,7 @@ class VerticalContainer(ILeftBody, MDGridLayout):
         
     
     def update_y(self):
-        """Updates y"""
+        """Updates pose y"""
         try:
             value = float(self.children[1].text)
             value = limit2(value, -161.625 + RADIUS, 161.625 - RADIUS)
@@ -583,7 +609,7 @@ class VerticalContainer(ILeftBody, MDGridLayout):
         self.prev_y = self.children[1].text
     
     def update_theta(self):
-        """Updates theta"""
+        """Updates pose theta"""
         try:
             value = float(self.children[0].text)
             self.children[0].text = "{:.3f}".format(value)
@@ -606,6 +632,7 @@ class VerticalContainer(ILeftBody, MDGridLayout):
     
 
 class RightContainer(IRightBodyTouch, MDBoxLayout):
+    """Right Container for Point Drawer"""
     adaptive_width = True
 
     def get_index(self):
@@ -618,15 +645,16 @@ class RightContainer(IRightBodyTouch, MDBoxLayout):
             i -= 1
 
 class PointDrawer(OneLineAvatarIconListItem):
-
-    
+    """Individual Point in Navigation Drawer"""
     pass
     
 
 class PointNavigationDrawer(MDBoxLayout):
+    """Holds points for current Trajectory"""
     pass
 
 class ItemDrawer(OneLineAvatarIconListItem):
+    """Shows a Trajectory in Navigation Drawer"""
     icon = StringProperty()
     def get_index(self):
         """Returns index in list"""
@@ -639,21 +667,24 @@ class ItemDrawer(OneLineAvatarIconListItem):
             i -= 1
 
 class ContentNavigationDrawer(BoxLayout):
+    """Layout for Navigation Drawer with Trajectories"""
     pass
 
 class StatLabel(MDBoxLayout):
+    """Layout Class for Statistic Labels"""
     text = StringProperty("Base")
     value = StringProperty("420")
     pass
 
 class SliderLayout(MDBoxLayout):
+    """Layout Class for Constraint Sliders"""
     value = NumericProperty()
 
     text = StringProperty("Base")
     min_v = NumericProperty(0)
     max_v = NumericProperty(200)
     
-    def test(self):
+    def update(self):
         prev_value = self.ids.slider.value
         
         try:
@@ -666,6 +697,8 @@ class SliderLayout(MDBoxLayout):
     pass
 
 class DrawerList(ThemableBehavior, MDList):
+    """GUI Class that holds a list of trajectories in the Navigation Drawer"""
+    
     def set_color_item(self, instance_item):
         """Changes color of tapped item"""
         # https://kivymd.readthedocs.io/en/latest/components/navigation-drawer/
@@ -683,29 +716,31 @@ class DrawerList(ThemableBehavior, MDList):
         if len(self.children) == 1:
             return
 
+        # Remove Trajectory from list
         index = instance_item.get_index()
         MDApp.get_running_app().trajectories.pop(index)
         
         self.remove_widget(instance_item)
 
+        # Update active trajectory if deleted the current trajectory to one higher
         if (not instance_item.text_color == self.theme_cls.text_color):
             index = len(self.children) - (1 if index == 0 else index)
             MDApp.get_running_app().set_active_trajectory(self.children[index])
 
-class MainApp(MDApp):
+class GUI_MD(MDApp):
     """Main app class"""
 
-    poses = [to_pose(300, 800, 45), to_pose(400, 900, -45), to_pose(200, 500, 180.0)]
-    trajectory = Trajectory(poses=poses)
+    # MISC Variables
     points = ListProperty()
-    control_points = ListProperty()
     reverse = StringProperty("Forward Trajectory")
     jsonIO = JsonIO()
 
+    # Trajectory Variables
     trajectories = []
     current_trajectory = Trajectory()
     iterator = TrajectoryIterator(current_trajectory)
 
+    # Constraints Variables
     timeout = .5
     max_vel = TimeDelayedBoolean(0, timeout)
     max_accel = TimeDelayedBoolean(0, timeout)
@@ -713,12 +748,14 @@ class MainApp(MDApp):
     start_vel = TimeDelayedBoolean(0, timeout)
     end_vel = TimeDelayedBoolean(0, timeout)
 
+    # Initialize Animation and Reverse Values
     prev_reverse = False
     prev_time = 0.0
     animation_active = False
     current_time = 0
     dt = .04
 
+    # Initialize Properties for Vectors
     s = 4.7
     origin = ListProperty([500,500])
     angle = NumericProperty(0)
@@ -735,22 +772,18 @@ class MainApp(MDApp):
 
 
     def __init__(self, **kwargs):
+        """Creates GUI_MD Object"""
         super().__init__(**kwargs)
         self.screen = Builder.load_string(KV)
 
+    # Setup and Cleanup
     def build(self):
         """Builds app and sets theme"""
         self.theme_cls.primary_palette = "Teal"
         self.theme_cls.accent_palette = "Cyan"
         self.theme_cls.theme_style = "Dark"
         return self.screen
-
-    def close_application(self):
-        """Callback for closing window"""
-
-        #https://stackoverflow.com/questions/32425831/how-to-exit-a-kivy-application-using-a-button
-        self.get_running_app().stop()
-
+    
     def on_start(self):
         """Runs at start of application: Initializes stuff"""
 
@@ -794,75 +827,14 @@ class MainApp(MDApp):
         # Schedule updating constraints
         Clock.schedule_interval(self.update_constraints, self.dt)
 
-
     def on_stop(self):
         """Save Settings before leaving"""
         self.jsonIO.save_trajectories(self.trajectories)
 
-    def save_trajectories(self, dt):
-        """Save Trajectories to JSON Periodically"""
-        self.jsonIO.save_trajectories(self.trajectories)
 
-    def update_points(self):
-        """Updates trajectory lines"""
-        point_list = []
-        for point in self.current_trajectory.points:
-            point_list.append(self.translate_x(point.pose.translation.x))
-            point_list.append(self.translate_y(point.pose.translation.y))
-        self.points = point_list
-        
-        with self.screen.ids.control_points.canvas.after:
-            #Rotate(angle=-self.angle)
-            self.screen.ids.control_points.canvas.after.clear()
-            Color(self.theme_cls.primary_dark[0],self.theme_cls.primary_dark[1],self.theme_cls.primary_dark[2],self.theme_cls.primary_dark[3])
-            radius = 50 / 8
-            for pose in self.current_trajectory.poses:
-                
-                Line(circle=(self.translate_x(pose.translation.x), self.translate_y(pose.translation.y), radius), width= 1.1, color=self.theme_cls.primary_color)
-                
-                
-                Ellipse(size=(radius,radius), pos=(self.translate_x(pose.translation.x) - radius/2, self.translate_y(pose.translation.y) - radius/2))
-        
-
-        self.reset_animation()
-        self.update_stats()
-
-    def translate_x(self, x):
-        """Returns x translation from inches to pixels"""
-        return x * 1.5 + 174
-    
-    def translate_y(self, y):
-        """Returns y translation from inches to pixels"""
-        return y * 1.5 + 689.5
-
-    def update_name(self, instance):
-        """Updates name of current trajectory"""
-        # Update trajectory name
-        self.current_trajectory.name = instance.text
-
-        # Update GUI name
-        length = len(self.screen.ids.content_drawer.ids.md_list.children) - 1
-        self.screen.ids.content_drawer.ids.md_list.children[length - self.get_current_index()].text = instance.text
-
-    def optimize_trajectory(self):
-        """Callback for optimizing current trajectory"""
-        self.current_trajectory.optimize_splines()
-
-        self.update_stats()
-        # Update points to match optimization
-        self.update_points()
-    
-    def mirror_trajectory(self):
-        """Mirrors current Trajectory and adds it as a new trajectory"""
-        self.add_trajectory(mirror_trajectory(self.current_trajectory))
-
-    def animate_trajectory(self):
-        if self.iterator.end_t < self.current_time:
-            self.reset_animation()
-        self.animation_active = not self.animation_active
-
+    # Callbacks
     def add_point(self):
-        """Adds a point to current trajectory"""
+        """Add Point Callback: adds a semi-random point to current trajectory"""
         dx = [50.0, 120.0]
         dy = [-30.0, 30.0]
         dt = [-20.0, 20.0]
@@ -883,7 +855,7 @@ class MainApp(MDApp):
         self.update_points()
 
     def add_trajectory(self, trajectory = None):
-        """Adds a trajectory to the trajectory list"""
+        """Add Trajectory Callback: adds a trajectory to the trajectory list"""
         
         if trajectory == None:
             # Find a valid trajectory name (Format: Trajectory1, Trajectory2, ... Trajectory100)
@@ -916,134 +888,78 @@ class MainApp(MDApp):
         self.trajectories.append(trajectory)
 
         self.set_active_trajectory(item)
-
-    def random_points(self):
-        """Returns list if multiple of pseudo-random poses, else 1 pose"""
-        theta_range = [-20.0, 20.0]
-        x_range = [15.0, 120.0]
-        y_range = [-100.0, 100.0]
-        x_delta = [60.0, 100.0]
-        y_delta = [-30.0, 30.0]
-
-        theta1 = uniform(theta_range[0], theta_range[1])
-        theta2 = uniform(theta_range[0], theta_range[1])
-        x = uniform(x_range[0], x_range[1])
-        y = uniform(y_range[0], y_range[1])
     
-        dx = uniform(x_delta[0], x_delta[1])
-        dy = uniform(y_delta[0], y_delta[1])
+    def animate_trajectory(self):
+        """Animation Callback: Toggles animation_active state"""
+        if self.iterator.end_t < self.current_time:
+            self.reset_animation()
+        self.animation_active = not self.animation_active
 
-        return [to_pose(x, y, theta1), to_pose(x + dx, y + dy, theta2)]
+    def close_application(self):
+        """Callback for closing window"""
 
+        #https://stackoverflow.com/questions/32425831/how-to-exit-a-kivy-application-using-a-button
+        self.get_running_app().stop()
+
+    def delete_point(self, instance):
+        """Callback to delete trajectory point"""
+
+        # Can't have less than 2 poses for a trajectory
+        if len(self.current_trajectory.poses) == 2:
+            return
+
+        # Remove and update poses
+        self.current_trajectory.remove_pose(instance.get_index())
+        self.update_poses()
     
     def down(self, instance):
         """Callback that moves a trajectory pose down one"""
         index = instance.get_index()
 
+        # Can't move last point down
         if index == len(self.current_trajectory.poses) - 1:
             return
         
         self.current_trajectory.move_pose(index, -1)
         self.update_poses()
     
+    def mirror_trajectory(self):
+        """Mirror Callback: mirrors current Trajectory and adds it as a new trajectory"""
+        self.add_trajectory(mirror_trajectory(self.current_trajectory))
+
+    def optimize_trajectory(self):
+        """Callback for optimizing current trajectory"""
+        self.current_trajectory.optimize_splines()
+
+        self.update_stats()
+        # Update points to match optimization
+        self.update_points()
+
     def up(self, instance):
         """Callback that moves a trajectory pose up one"""
         index = instance.get_index()
 
+        # Can't move last point up
         if index == 0:
             return
         
         self.current_trajectory.move_pose(index, 1)
         self.update_poses()
     
-    def delete_point(self, instance):
-        """Callback to delete trajectory point"""
+    def update_name(self, instance):
+        """Name Callback: updates name of current trajectory"""
+        # Update trajectory name
+        self.current_trajectory.name = instance.text
 
-        if len(self.current_trajectory.poses) == 2:
-            return
-        self.current_trajectory.remove_pose(instance.get_index())
-        self.update_poses()
+        # Update GUI name
+        length = len(self.screen.ids.content_drawer.ids.md_list.children) - 1
+        self.screen.ids.content_drawer.ids.md_list.children[length - self.get_current_index()].text = instance.text
+
         
-    
-    def update_reverse(self, checkbox, value):
-        """https://kivymd.readthedocs.io/en/latest/components/selection-controls/"""
-        
-        slider_state = checkbox.active
-
-        self.reverse = "Reverse Trajectory" if slider_state else "Forward Trajectory"
-        
-        if self.prev_reverse != slider_state:
-            self.current_trajectory.update_reverse(slider_state)
-
-        self.prev_reverse = slider_state
-
-        self.update_stats()
-    
-    def set_reverse(self):
-        """Sets reverse slider"""
-        self.screen.ids.reverse.active = self.current_trajectory.reverse
-
-
-
-    def set_active_trajectory(self, selected_instance):
-        """Updates Current Trajectory"""
-        self.screen.ids.content_drawer.ids.md_list.set_color_item(selected_instance)
-
-        # Set all to False
-        for t in self.trajectories:
-            t.current = False
-
-        # Update Current Trajectory
-        self.current_trajectory = self.trajectories[selected_instance.get_index()]
-        self.current_trajectory.current = True
-        self.screen.ids.title.text = self.current_trajectory.name
-
-        # Update Trajectory Iterator
-        self.iterator = TrajectoryIterator(self.current_trajectory)
-        self.reset_animation()
-        self.update_poses()
-
-        # Update Constraints
-        self.set_constraints()
-        self.set_reverse()
-
-        # Update Time Slider
-        self.screen.ids.time.min = self.iterator.start_t
-        self.screen.ids.time.max = self.iterator.end_t
-        
-
-    def get_current_index(self):
-        """Returns index of current trajectory"""
-        i = 0
-        for t in self.trajectories:
-            if t == self.current_trajectory:
-                return i
-            i += 1
-    
-    def update_poses(self):
-        """Updates displayed poses to match current trajectory""" 
-        
-        # Remove Children
-        self.screen.ids.point_list.clear_widgets()
-        
-        # Re-add Children
-        for p in self.current_trajectory.poses:
-            self.screen.ids.point_list.add_widget(PointDrawer())
-        
-        # Update values
-        for i in range(len(self.screen.ids.point_list.children)):
-            c = self.screen.ids.point_list.children[len(self.screen.ids.point_list.children) - i - 1]
-            c.ids.left_container.initial_update(self.current_trajectory.poses[i].translation.x, self.current_trajectory.poses[i].translation.y, self.current_trajectory.poses[i].rotation.get_degrees())
-        
-        self.update_stats()
-        self.update_points()
-
-    def update_stats(self):
-        """Updates Generation, drive, and length"""
-        self.screen.ids.generation.value = "{:.7f}".format(self.current_trajectory.generation_time)
-        self.screen.ids.drive.value = "{:.3f}".format(self.current_trajectory.drive_time)
-        self.screen.ids.length.value = "{:.3f}".format(self.current_trajectory.length)
-        self.screen.ids.current_vel.value = "{:.3f}".format(self.iterator.current_sample.velocity)
+    # Periodic Functions
+    def save_trajectories(self, dt):
+        """Save Trajectories to JSON Periodically"""
+        self.jsonIO.save_trajectories(self.trajectories)
 
     def update_constraints(self, dt):
         """Periodically called to update trajectory Constraints"""
@@ -1073,6 +989,7 @@ class MainApp(MDApp):
             self.current_trajectory.update_constraint(end_velocity, 4)
             updated = True
 
+        # If a constraint changes recalculate and reset animation
         if updated:
             self.update_stats()
             self.reset_animation()
@@ -1087,27 +1004,7 @@ class MainApp(MDApp):
         self.prev_time = self.screen.ids.time.value
 
 
-
-    def set_constraints(self):
-        """Sets constraints"""
-        max_velocity = self.current_trajectory.max_velocity
-        max_acceleration = self.current_trajectory.max_abs_acceleration
-        max_centr_acceleration = self.current_trajectory.max_centr_acceleration
-        start_velocity = self.current_trajectory.start_velocity
-        end_velocity = self.current_trajectory.end_velocity
-
-        self.max_vel = TimeDelayedBoolean(max_velocity, self.timeout)
-        self.max_accel = TimeDelayedBoolean(max_acceleration, self.timeout)
-        self.max_centr_accel = TimeDelayedBoolean(max_centr_acceleration, self.timeout)
-        self.start_vel = TimeDelayedBoolean(start_velocity, self.timeout)
-        self.end_vel = TimeDelayedBoolean(end_velocity, self.timeout)
-
-        self.screen.ids.max_vel.ids.slider.value = max_velocity
-        self.screen.ids.max_accel.ids.slider.value = max_acceleration
-        self.screen.ids.max_centr_accel.ids.slider.value = max_centr_acceleration
-        self.screen.ids.start_vel.ids.slider.value = start_velocity
-        self.screen.ids.end_vel.ids.slider.value = end_velocity
-
+    # Reset/Set Functions
     def reset_animation(self):
         """Resets Trajectory Animation"""
         self.calculate_model(0.0)
@@ -1116,13 +1013,62 @@ class MainApp(MDApp):
         self.screen.ids.time.min = self.iterator.start_t
         self.screen.ids.time.max = self.iterator.end_t
 
-    def update_animation(self, dt):
-        """Updates Trajectory Animation"""
-        self.calculate_model(self.current_time + dt)
-        if self.current_time > self.iterator.end_t:
-            self.animation_active = False
-        
-    
+    def set_active_trajectory(self, selected_instance):
+        """Updates Current Trajectory"""
+        self.screen.ids.content_drawer.ids.md_list.set_color_item(selected_instance)
+
+        # Set all to False
+        for t in self.trajectories:
+            t.current = False
+
+        # Update Current Trajectory
+        self.current_trajectory = self.trajectories[selected_instance.get_index()]
+        self.current_trajectory.current = True
+        self.screen.ids.title.text = self.current_trajectory.name
+
+        # Update Trajectory Iterator
+        self.iterator = TrajectoryIterator(self.current_trajectory)
+        self.reset_animation()
+        self.update_poses()
+
+        # Update Constraints
+        self.set_constraints()
+        self.set_reverse()
+
+        # Update Time Slider
+        self.screen.ids.time.min = self.iterator.start_t
+        self.screen.ids.time.max = self.iterator.end_t
+
+    def set_constraints(self):
+        """Sets constraints"""
+
+        # Create Temporary variables to improve readability
+        max_velocity = self.current_trajectory.max_velocity
+        max_acceleration = self.current_trajectory.max_abs_acceleration
+        max_centr_acceleration = self.current_trajectory.max_centr_acceleration
+        start_velocity = self.current_trajectory.start_velocity
+        end_velocity = self.current_trajectory.end_velocity
+
+        # Create new delays, so constraints only change after slider stops
+        self.max_vel = TimeDelayedBoolean(max_velocity, self.timeout)
+        self.max_accel = TimeDelayedBoolean(max_acceleration, self.timeout)
+        self.max_centr_accel = TimeDelayedBoolean(max_centr_acceleration, self.timeout)
+        self.start_vel = TimeDelayedBoolean(start_velocity, self.timeout)
+        self.end_vel = TimeDelayedBoolean(end_velocity, self.timeout)
+
+        # Update Visible Constraints
+        self.screen.ids.max_vel.ids.slider.value = max_velocity
+        self.screen.ids.max_accel.ids.slider.value = max_acceleration
+        self.screen.ids.max_centr_accel.ids.slider.value = max_centr_acceleration
+        self.screen.ids.start_vel.ids.slider.value = start_velocity
+        self.screen.ids.end_vel.ids.slider.value = end_velocity
+
+    def set_reverse(self):
+        """Sets reverse slider"""
+        self.screen.ids.reverse.active = self.current_trajectory.reverse
+
+
+    # Update Functions
     def calculate_model(self, t):
         """Calculates parameters for the model and updates drawing"""
         
@@ -1146,6 +1092,120 @@ class MainApp(MDApp):
         self.accel_length = 5.4 * math.hypot(centr, linear)
         if epsilon_equals(self.accel_length, 0):
             self.accel_length = .01
-        self.accel_angle = math.degrees(math.atan2(centr, linear))
 
-MainApp().run()
+        # Set accel angle as tangent of the linear and centripetal acceleration 
+        self.accel_angle = math.degrees(math.atan2(centr, linear * -1 if self.current_trajectory.reverse else 1))
+    
+    def update_animation(self, dt):
+        """Updates Trajectory Animation"""
+        self.calculate_model(self.current_time + dt)
+        if self.current_time > self.iterator.end_t:
+            self.animation_active = False
+    
+    def update_points(self):
+        """Updates trajectory lines"""
+        
+        # Sets Lines for trajectory
+        point_list = []
+        for point in self.current_trajectory.points:
+            point_list.append(self.translate_x(point.pose.translation.x))
+            point_list.append(self.translate_y(point.pose.translation.y))
+        self.points = point_list
+        
+        # Redraws control points
+        with self.screen.ids.control_points.canvas.after:
+            self.screen.ids.control_points.canvas.after.clear()
+            Color(self.theme_cls.primary_dark[0],self.theme_cls.primary_dark[1],self.theme_cls.primary_dark[2],self.theme_cls.primary_dark[3])
+            radius = 50 / 8
+            for pose in self.current_trajectory.poses:
+                
+                Line(circle=(self.translate_x(pose.translation.x), self.translate_y(pose.translation.y), radius), width= 1.1, color=self.theme_cls.primary_color)
+                
+                
+                Ellipse(size=(radius,radius), pos=(self.translate_x(pose.translation.x) - radius/2, self.translate_y(pose.translation.y) - radius/2))
+        
+        # Reset stats and animation
+        self.reset_animation()
+        self.update_stats()
+
+    def update_poses(self):
+        """Updates displayed poses to match current trajectory""" 
+        
+        # Remove Children
+        self.screen.ids.point_list.clear_widgets()
+        
+        # Re-add Children
+        for p in self.current_trajectory.poses:
+            self.screen.ids.point_list.add_widget(PointDrawer())
+        
+        # Update values
+        for i in range(len(self.screen.ids.point_list.children)):
+            c = self.screen.ids.point_list.children[len(self.screen.ids.point_list.children) - i - 1]
+            c.ids.left_container.initial_update(self.current_trajectory.poses[i].translation.x, self.current_trajectory.poses[i].translation.y, self.current_trajectory.poses[i].rotation.get_degrees())
+        
+        self.update_stats()
+        self.update_points()
+
+    def update_reverse(self, checkbox, value):
+        """Reverse Callback: updates tooltip and reverse value
+        https://kivymd.readthedocs.io/en/latest/components/selection-controls/"""
+
+        # Update Tooltip
+        slider_state = checkbox.active
+
+        self.reverse = "Reverse Trajectory" if slider_state else "Forward Trajectory"
+        
+        # Probably is not necessary, but check that slider state is opposite
+        if self.prev_reverse != slider_state:
+            self.current_trajectory.update_reverse(slider_state)
+
+        self.prev_reverse = slider_state
+
+        self.update_stats()
+
+    def update_stats(self):
+        """Updates Generation, drive, and length"""
+        self.screen.ids.generation.value = "{:.7f}".format(self.current_trajectory.generation_time)
+        self.screen.ids.drive.value = "{:.3f}".format(self.current_trajectory.drive_time)
+        self.screen.ids.length.value = "{:.3f}".format(self.current_trajectory.length)
+        self.screen.ids.current_vel.value = "{:.3f}".format(self.iterator.current_sample.velocity)
+
+
+    # Helper Functions
+    def get_current_index(self):
+        """Returns index of current trajectory"""
+        i = 0
+        for t in self.trajectories:
+            if t == self.current_trajectory:
+                return i
+            i += 1
+
+    def random_points(self):
+        """Returns list of pseudo-random poses"""
+        theta_range = [-20.0, 20.0]
+        x_range = [15.0, 120.0]
+        y_range = [-100.0, 100.0]
+        x_delta = [60.0, 100.0]
+        y_delta = [-30.0, 30.0]
+
+        theta1 = uniform(theta_range[0], theta_range[1])
+        theta2 = uniform(theta_range[0], theta_range[1])
+        x = uniform(x_range[0], x_range[1])
+        y = uniform(y_range[0], y_range[1])
+    
+        dx = uniform(x_delta[0], x_delta[1])
+        dy = uniform(y_delta[0], y_delta[1])
+
+        return [to_pose(x, y, theta1), to_pose(x + dx, y + dy, theta2)]
+
+    def translate_x(self, x):
+        """Returns x translation from inches to pixels"""
+        return x * 1.5 + 174
+
+    def translate_y(self, y):
+        """Returns y translation from inches to pixels"""
+        return y * 1.5 + 689.5
+
+# Run app
+if __name__ == "__main__":
+    GUI_MD().run()

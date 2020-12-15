@@ -1,3 +1,12 @@
+"""CS 108 Trajectory Visualization Project
+
+Class for modeling and testing a robot 
+
+
+@author: Matthew Walstra (mjw64)
+@date: Fall, 2020
+"""
+
 from kivy.lang import Builder
 
 from kivymd.app import MDApp
@@ -8,7 +17,7 @@ KV = '''
     
     origin: 500, 500
     angle: 0
-    scalar: 4.7
+    scalar: 4.7 * 10
     wheel: 2.5, 1.25
     pos_scalar: 4
     radius: root.scalar / 5, root.scalar / 5
@@ -23,7 +32,7 @@ KV = '''
         
         Rotate:
             id: rot
-            angle: app.angle
+            angle: root.angle
             axis: 0,0,1
             origin: root.origin
         
@@ -101,7 +110,13 @@ KV = '''
             pos:  root.origin[0] - (root.wheel[1] * root.scalar * root.vector_scalar) / 2, root.origin[1] + 1.5 * root.scalar
             size: root.wheel[1] * root.scalar * root.vector_scalar, root.accel_length * root.scalar
             radius: root.radius
+        
+        Rotate:
+            angle: -root.accel_angle - root.angle
+            axis: 0,0,1
+            oritin: root.origin
 
+RobotModel:
 '''
 
 class RobotModel(MDFloatLayout):
@@ -116,6 +131,5 @@ if __name__ == "__main__":
             self.screen = Builder.load_string(KV)
             return self.screen
 
-        
 
     MainApp().run()

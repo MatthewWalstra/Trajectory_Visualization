@@ -53,6 +53,7 @@ class Trajectory:
     def __init__(self, name="", poses=[], current=False, reverse=False, start_velocity=0, end_velocity=0, max_velocity=120, max_abs_acceleration=180, max_centr_acceleration=120):
         """Constructs a Trajectory object"""
 
+        # Initialize variables
         self.current = current
         self.name = name
         self.poses = poses
@@ -67,6 +68,7 @@ class Trajectory:
 
         self.prev_constraints = [max_velocity, max_abs_acceleration, max_centr_acceleration, start_velocity, end_velocity]
 
+        # Initial parameterization
         if len(self.poses) != 0:
             self.update_splines = True
             self.reparameterize_splines()
@@ -135,14 +137,14 @@ class Trajectory:
         self.reset()
 
     def move_pose(self, index, delta):
-        """Mutator to move pose up or down"""
+        """Mutator to move pose up or down in list"""
         #https://www.geeksforgeeks.org/python-program-to-swap-two-elements-in-a-list/
         self.poses[index],self.poses[index - delta] = self.poses[index - delta],self.poses[index]
 
         self.reset()
 
     def remove_pose(self, index):
-        """Mutator to add pose to end"""
+        """Mutator to remove pose at index"""
         self.poses.pop(index)
 
         self.reset()
@@ -174,7 +176,7 @@ class Trajectory:
         self.reparameterize_splines()
 
     def update_constraint(self, value, index):
-        """Updates constraint if different than previous"""
+        """Updates constraint at index"""
 
         if index == 0:
             self.max_velocity = value
